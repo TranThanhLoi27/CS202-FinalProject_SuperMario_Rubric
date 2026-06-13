@@ -7,16 +7,16 @@
 
 class AssetManager{
 public:
-    //nap texture 
+    //load texture 
     bool LoadTexture(const std::string& id, const std::string& path);
-    //nap font
+    //load font
     bool LoadFont(const std::string& id, const std::string& path);
-    //lay texture
+    //return pointer texture
     const sf::Texture* texture(const std::string& id) const;
-    //lay font
+    //return pointer font
     const sf::Font* font(const std::string& id) const;
     //clear textures & fonts
-    void clear();
+    void Clear();
 private:
     std::map<std::string, sf::Texture> textures;
     std::map<std::string, sf::Font> fonts;

@@ -1,6 +1,4 @@
 #include<Core/AssetManager.h>
-#include<map>
-#include<string>
 
 bool AssetManager::LoadTexture(const std::string& id, const std::string& path){
     sf::Texture texture;
@@ -26,7 +24,7 @@ const sf::Font* AssetManager::font(const std::string& id) const{
     return it == fonts.end() ? nullptr : &it->second;
 }
 
-void AssetManager::clear(){
+void AssetManager::Clear(){
     textures.clear();
     fonts.clear();
 }
