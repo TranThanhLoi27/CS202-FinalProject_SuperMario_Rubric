@@ -16,7 +16,9 @@ void AudioManager::PlaySound(const std::string& id){
 }
 
 void AudioManager::PlayMusic(const std::string& path, bool loop){
-    if(!music.openFromFile(path))return;
+    if(!music.openFromFile(path)){
+        return;
+    }
     music.setLooping(loop);
     music.setVolume(mastervolume);
     music.play();
