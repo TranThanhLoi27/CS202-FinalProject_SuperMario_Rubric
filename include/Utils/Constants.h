@@ -7,7 +7,7 @@ namespace Constants {
     inline constexpr unsigned int FRAME_LIMIT = 60;
     inline constexpr float MAX_FRAME_TIME = 0.05f;
 
-    inline constexpr int TILE_SIZE = 32;
+    inline constexpr float TILE_SIZE = 32;
 
     inline constexpr float GRAVITY = 1200.0f;
     inline constexpr float PLAYER_SPEED = 220.0f;
