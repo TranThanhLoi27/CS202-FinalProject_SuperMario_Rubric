@@ -3,13 +3,14 @@
 #include <SFML/Graphics.hpp>
 
 #include <World/TileType.h>
+#include <Utils/Constants.h>
 
 #include <vector> 
 
 
 class TileMap{
 public:
-    void Draw();
+    void Draw(sf::RenderWindow& window, sf::Vector2f camera) const;
     bool IsSolid(const int& x, const int& y);
 private:
     int cols, rows;

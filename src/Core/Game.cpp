@@ -14,7 +14,6 @@ void Game::run(){
             }
         }
         window.clear();
-        
         window.display();
     }
 }
