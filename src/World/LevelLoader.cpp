@@ -1,7 +1,7 @@
-#include <World/LevelLoad.h>
+#include <World/LevelLoader.h>
 #include <Utils/Constants.h>
 #include <fstream>
-void LevelLoad::LoadFromFile(const std::string& path, LevelData& out){
+bool LevelLoader::load(const std::string& path, LevelData& out){
     std::ifstream file(path);
     if(!file)return ;
     std::vector< std::string> lines;

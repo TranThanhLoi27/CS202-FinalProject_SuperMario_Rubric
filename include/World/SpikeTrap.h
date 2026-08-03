@@ -2,10 +2,12 @@
 
 #include <SFML/Graphics.hpp>
 
+#include <vector>
+
 class SpikeTrap{
 public:
-    SpikeTrap(sf::FloatRect bound, int damage = 1);
+    void SetSpikes(std::vector<sf::FloatRect> _spikes);
 private:
-    sf::FloatRect bound;
+    std::vector<sf::FloatRect> spikes;
     int damage = 1;
 };

@@ -1,8 +1,14 @@
 #include <World/TileMap.h>
 
+
+void TileMap::setTiles(std::vector<std::vector<bool>> tiles){
+    solid = std::move(tiles);
+    rows = solid.size();
+    cols = rows > 0 ? solid[0].size() : 0;
+}
 bool TileMap::IsSolid(const int& x, const int& y){
     if(x < 0 || y < 0 || x >= cols || y >= rows)return 0;
-    return tiles[y][x];
+    return solid[y][x];
 }
 
 void TileMap::Draw(sf::RenderWindow& window, sf::Vector2f camera) const {
@@ -18,7 +24,7 @@ void TileMap::Draw(sf::RenderWindow& window, sf::Vector2f camera) const {
     const int endY = std::min(rows, static_cast<int>((camera.y + viewSize.y) / Constants::TILE_SIZE) + 2);
     for(int y = startY; y <= endY; y++){
         for(int x = startX; x <= endX; x++){
-            if(!tiles[y][x])continue;
+            if(!solid[y][x])continue;
             const sf::Vector2f p(static_cast<float>(x * Constants::TILE_SIZE) - camera.x, static_cast<float>(y * Constants::TILE_SIZE) - camera.y);
             tile.setPosition(p);
             window.draw(tile);

@@ -8,13 +8,13 @@
 #include <vector>
 struct LevelData{
     std::vector< std::vector<bool> > solidtiles;
-    std::vector<SpikeTrap> spikes;
+    std::vector<sf::FloatRect> spikes;
     //std::vector<PlayerSpam> playerspams;
     //std::vector<GoalGate> goal;
     //std::vector<Enemy> enemies;
 };
 
-class LevelLoad{
+class LevelLoader{
 public:
-    void LoadFromFile(const std::string& path, LevelData& out);
+    bool load(const std::string& path, LevelData& out);
 };

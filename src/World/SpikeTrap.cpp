@@ -1,3 +1,5 @@
 #include <World/SpikeTrap.h>
 
-SpikeTrap::SpikeTrap(sf::FloatRect bounds, int damage): bound(bounds), damage(damage) {}
+void SpikeTrap::SetSpikes(std::vector<sf::FloatRect> _spikes){
+    spikes = std::move(_spikes);
+}
