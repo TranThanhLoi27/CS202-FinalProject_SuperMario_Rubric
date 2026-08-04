@@ -6,8 +6,9 @@
 
 class SpikeTrap{
 public:
-    void SetSpikes(std::vector<sf::FloatRect> _spikes);
+    SpikeTrap(int damage = 1, sf::FloatRect bound, sf::Sprite);
 private:
-    std::vector<sf::FloatRect> spikes;
+    sf::Sprite sprite;
+    sf::FloatRect bound;
     int damage = 1;
 };
