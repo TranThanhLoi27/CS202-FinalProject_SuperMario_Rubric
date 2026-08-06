@@ -6,9 +6,12 @@
 
 class SpikeTrap{
 public:
-    SpikeTrap(int damage = 1, sf::FloatRect bound, sf::Sprite);
+    SpikeTrap(sf::FloatRect bound, const sf::Texture& texture, int damage = 1);
+    void render(sf::RenderWindow& window) const;
+    sf::FloatRect getBound();
+protected:
+sf::Sprite sprite;
 private:
-    sf::Sprite sprite;
     sf::FloatRect bound;
     int damage = 1;
 };

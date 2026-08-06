@@ -1,13 +1,18 @@
-#include <Core/Camera.h>
-#include <Utils/MathUtils.h>
-Camera::Camera(sf::Vector2f viewsize, sf::Vector2f levelsize): 
-    view(sf::Vector2f(viewsize.x / 2, viewsize.y / 2), viewsize),
-    worldsize(levelsize){}
+// Smoothly follows a target while keeping the view inside level bounds.
+#include "Core/Camera.h"
 
-void Camera::Change(const sf::Vector2f& p1, const sf::Vector2f& p2){
-    sf::Vector2f center({(p1.x + p2.x) / 2, (p1.y + p2.y) / 2});
-    const sf::Vector2f viewsize = view.getSize();
-    center.x = MathUtils::clamp(center.x, viewsize.x / 2.f, worldsize.x - viewsize.x / 2.f);
-    center.y = MathUtils::clamp(center.y, viewsize.y / 2.f, worldsize.y - viewsize.y / 2.f);
-    view.setCenter(center);
+#include "Utils/MathUtils.h"
+
+#include <algorithm>
+#include <cmath>
+
+sf::Vector2f Camera::follow(sf::Vector2f current, sf::Vector2f target, sf::Vector2f viewSize, sf::Vector2f worldSize, float dt) {
+    const sf::Vector2f clamped(
+        MathUtils::clamp(target.x - viewSize.x * 0.5f, 0.0f, std::max(0.0f, worldSize.x - viewSize.x)),
+        MathUtils::clamp(target.y - viewSize.y * 0.5f + 40.0f, 0.0f, std::max(0.0f, worldSize.y - viewSize.y))
+    );
+    const float ease = 1.0f - std::pow(0.001f, dt);
+    return current + (clamped - current) * ease;
 }
+
+void Camera::reset() {}

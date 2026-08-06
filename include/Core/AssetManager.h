@@ -12,9 +12,9 @@ public:
     //load font
     bool LoadFont(const std::string& id, const std::string& path);
     //return pointer texture
-    const sf::Texture* texture(const std::string& id) const;
+    const sf::Texture& texture(const std::string& id) const;
     //return pointer font
-    const sf::Font* font(const std::string& id) const;
+    const sf::Font& font(const std::string& id) const;
     //clear textures & fonts
     void Clear();
 private:
