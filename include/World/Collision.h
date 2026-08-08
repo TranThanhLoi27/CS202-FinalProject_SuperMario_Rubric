@@ -1,9 +1,9 @@
-#pragma once
+// #pragma once
 
-class Entity;
-class TileMap;
+// class Entity;
+// class TileMap;
 
-class Collision {
-public:
-    static void resolveTileCollision(Entity& entity, const TileMap& map);
-};
+// class Collision {
+// public:
+//     static void resolveTileCollision(Entity& entity, const TileMap& map);
+// };
