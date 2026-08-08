@@ -1,0 +1,41 @@
+cmake_minimum_required(VERSION 3.28)
+
+project(sfml_CS202 LANGUAGES CXX)
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+file(GLOB_RECURSE SRC_FILES
+    CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
+)
+
+add_executable(sfml_CS202
+    ${SRC_FILES}
+)
+
+target_include_directories(sfml_CS202 PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+)
+
+find_package(SFML 3 REQUIRED COMPONENTS
+    Graphics
+    Window
+    System
+    Audio
+)
+
+target_link_libraries(sfml_CS202 PRIVATE
+    SFML::Graphics
+    SFML::Window
+    SFML::System
+    SFML::Audio
+)
+
+add_custom_command(TARGET sfml_CS202 POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    "${CMAKE_CURRENT_SOURCE_DIR}/assets"
+    "$<TARGET_FILE_DIR:sfml_CS202>/assets"
+)
