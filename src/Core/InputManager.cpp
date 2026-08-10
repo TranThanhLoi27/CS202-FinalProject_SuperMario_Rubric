@@ -47,10 +47,10 @@ void InputManager::update() {
     prevState.p2J = currP2J; prevState.p2K = currP2K; prevState.p2L = currP2L; prevState.p2O = currP2O;
 }
 
-const InputState& InputManager::getP1State() const {
+const InputState& InputManager::getPlayer1Input() const {
     return p1State;
 }
 
-const InputState& InputManager::getP2State() const {
+const InputState& InputManager::getPlayer2Input() const {
     return p2State;
 }
