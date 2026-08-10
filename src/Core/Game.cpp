@@ -2,6 +2,8 @@
 
 Game::Game():  
     window(sf::VideoMode({Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT}), "Ori"){
+    loadAsset();
+    level.LoadFromFile("assets/levels/level1.txt", assets);
     audio.SetVolume(70.f);
     audio.PlayMusic("assets/audio/background.ogg");
 }
@@ -20,8 +22,13 @@ void Game::run(){
     }
 }
 
+void Game::loadAsset(){
+    assets.LoadTexture("spike", "assets/textures/spike.png");
+    assets.LoadTexture("goal", "assets/textures/goal.png");
+}
+
 void Game::render(){
     window.clear();
-    level.draw();
+    level.draw(window, camera);
     window.display();
 }

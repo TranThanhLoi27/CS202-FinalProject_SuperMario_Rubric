@@ -6,9 +6,15 @@ void TileMap::setTiles(std::vector<std::vector<bool>> tiles){
     rows = solid.size();
     cols = rows > 0 ? solid[0].size() : 0;
 }
-bool TileMap::IsSolid(const int& x, const int& y){
-    if(x < 0 || y < 0 || x >= cols || y >= rows)return 0;
+bool TileMap::IsSolid(const int& x, const int& y) const {
+    if(x < 0 || y < 0 || y >= rows || x >= cols) return false;
     return solid[y][x];
+}
+
+bool TileMap::setSolid(int x, int y, bool value) {
+    if(x < 0 || y < 0 || y >= rows || x >= cols) return false;
+    solid[y][x] = value;
+    return true;
 }
 
 void TileMap::Draw(sf::RenderWindow& window, sf::Vector2f camera) const {
@@ -17,11 +23,12 @@ void TileMap::Draw(sf::RenderWindow& window, sf::Vector2f camera) const {
     tile.setFillColor({57, 73, 50});
     sf::RectangleShape grass({static_cast<float>(Constants::TILE_SIZE), 6.0f});
     grass.setFillColor({86, 114, 74});
+
     const sf::Vector2f viewSize = window.getView().getSize();
     const int startX = std::max(0, static_cast<int>(camera.x / Constants::TILE_SIZE) - 1);
-    const int endX = std::min(cols, static_cast<int>((camera.x + viewSize.x) / Constants::TILE_SIZE) + 2);
+    const int endX = std::min(cols - 1, static_cast<int>((camera.x + viewSize.x) / Constants::TILE_SIZE) + 2);
     const int startY = std::max(0, static_cast<int>(camera.y / Constants::TILE_SIZE) - 1);
-    const int endY = std::min(rows, static_cast<int>((camera.y + viewSize.y) / Constants::TILE_SIZE) + 2);
+    const int endY = std::min(rows - 1, static_cast<int>((camera.y + viewSize.y) / Constants::TILE_SIZE) + 2);
     for(int y = startY; y <= endY; y++){
         for(int x = startX; x <= endX; x++){
             if(!solid[y][x])continue;

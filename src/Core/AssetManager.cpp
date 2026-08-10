@@ -14,14 +14,14 @@ bool AssetManager::LoadFont(const std::string& id, const std::string& path){
     return true;    
 }
 
-const sf::Texture* AssetManager::texture(const std::string& id) const{
+const sf::Texture& AssetManager::texture(const std::string& id) const{
     const auto it = textures.find(id);
-    return it == textures.end() ? nullptr : &it->second;
+    return it->second;
 }
 
-const sf::Font* AssetManager::font(const std::string& id) const{
+const sf::Font& AssetManager::font(const std::string& id) const{
     const auto it = fonts.find(id);
-    return it == fonts.end() ? nullptr : &it->second;
+    return it->second;
 }
 
 void AssetManager::Clear(){
