@@ -125,6 +125,12 @@ void Player::update(float dt, const InputState& input) {
         attack();
     }
 
+    if (input.placeBlock.isPressed) {
+        if (auto block = placeBlock()) {
+            pendingPlacedBlocks.push_back(*block);
+        }
+    }
+
     if (isAttacking) {
         attackTimer -= dt;
         if (attackTimer <= 0.0f) {
@@ -212,4 +218,30 @@ sf::FloatRect Player::getAttackHitbox() const {
     }
     
     return sf::FloatRect(sf::Vector2f(xPos, position.y), sf::Vector2f(hitboxWidth, hitboxHeight));
+}
+
+// Places a block if player has one in inventory, returning the block object
+std::optional<PlacedBlock> Player::placeBlock() {
+    if (inventory.getItemCount(ItemType::BLOCK) > 0) {
+        inventory.removeItem(ItemType::BLOCK, 1);
+        
+        float blockX = position.x;
+        if (facingDir == RIGHT) {
+            blockX += 32.0f + 5.0f; // Place slightly in front
+        } else {
+            blockX -= 32.0f + 5.0f; // Place slightly behind
+        }
+        
+        // Align block vertically to player's center/bottom
+        sf::Vector2f blockPos(blockX, position.y + 32.0f);
+        return PlacedBlock(blockPos);
+    }
+    return std::nullopt;
+}
+
+// Retrieves all recently placed blocks and clears the internal queue
+std::vector<PlacedBlock> Player::getAndClearPendingBlocks() {
+    auto copy = pendingPlacedBlocks;
+    pendingPlacedBlocks.clear();
+    return copy;
 }
