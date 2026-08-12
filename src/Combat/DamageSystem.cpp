@@ -19,7 +19,7 @@ void DamageSystem::handlePlayerAttacks(Level& level) {
 
 void DamageSystem::handleEnemyContact(Level& level) {
     for (auto& player : level.getPlayers()) {
-        if (player->isRespawning()) continue;
+        if (player->isRespawning() || player->isDodging()) continue;
         for (auto& enemy : level.getEnemies()) {
             if (!MathUtils::intersects(player->getBounds(), enemy->getBounds())) continue;
             const float knockback = player->position.x < enemy->position.x ? -230.0f : 230.0f;

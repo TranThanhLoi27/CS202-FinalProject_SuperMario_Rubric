@@ -6,6 +6,6 @@ void SpikeTrap::render(sf::RenderWindow& window) const{
     window.draw(sprite);
 }
 
-sf::FloatRect SpikeTrap::getBound(){
+const sf::FloatRect& SpikeTrap::getBound() const {
     return bound;
 }

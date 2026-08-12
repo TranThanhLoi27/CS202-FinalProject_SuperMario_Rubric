@@ -1,5 +1,7 @@
 #include <World/TileMap.h>
 
+#include <cmath>
+
 
 void TileMap::setTiles(std::vector<std::vector<bool>> tiles){
     solid = std::move(tiles);
@@ -9,6 +11,12 @@ void TileMap::setTiles(std::vector<std::vector<bool>> tiles){
 bool TileMap::IsSolid(const int& x, const int& y) const {
     if(x < 0 || y < 0 || y >= rows || x >= cols) return false;
     return solid[y][x];
+}
+
+bool TileMap::isSolidAt(sf::Vector2f position) const {
+    const int x = static_cast<int>(std::floor(position.x / Constants::TILE_SIZE));
+    const int y = static_cast<int>(std::floor(position.y / Constants::TILE_SIZE));
+    return IsSolid(x, y);
 }
 
 bool TileMap::setSolid(int x, int y, bool value) {

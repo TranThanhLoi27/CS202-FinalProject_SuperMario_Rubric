@@ -214,8 +214,9 @@ void Level::handleSpikes() {
     for (auto& player : players) {
         if (player->isRespawning()) continue;
         for (const auto& spike : spikes) {
-            if (!MathUtils::intersects(player->getBounds(), spike.bounds)) continue;
-            player->takeDamage(spike.damage, player->position.x < spike.bounds.position.x ? -170.0f : 170.0f);
+            const sf::FloatRect& bounds = spike.getBound();
+            if (!MathUtils::intersects(player->getBounds(), bounds)) continue;
+            player->takeDamage(spike.getDamage(), player->position.x < bounds.position.x ? -170.0f : 170.0f);
         }
     }
 }
@@ -240,7 +241,7 @@ void Level::eraseDeadObjects() {
 bool Level::hasWon() const {
     const auto inGoal = [&](const Player& player) {
         return std::any_of(goals.begin(), goals.end(), [&](const GoalGate& goal) {
-            return MathUtils::intersects(player.getBounds(), goal.bounds);
+            return MathUtils::intersects(player.getBounds(), goal.getBound());
         });
     };
     const bool allActivePlayersInGoal = std::all_of(players.begin(), players.end(), [&](const auto& player) {
@@ -278,8 +279,20 @@ std::vector<std::unique_ptr<DroppedItem>>& Level::getDroppedItems() { return dro
 std::vector<std::unique_ptr<Tombstone>>& Level::getTombstones() { return tombstones; }
 
 void Level::drawMarkers(sf::RenderWindow& window, sf::Vector2f camera) const {
-    Draw(spikes, window, camera);
-    Draw(goals, window, camera);
+    for (const auto& spike : spikes) {
+        const auto& bounds = spike.getBound();
+        sf::RectangleShape marker(bounds.size);
+        marker.setPosition(bounds.position - camera);
+        marker.setFillColor({196, 77, 77});
+        window.draw(marker);
+    }
+    for (const auto& goal : goals) {
+        const auto& bounds = goal.getBound();
+        sf::RectangleShape marker(bounds.size);
+        marker.setPosition(bounds.position - camera);
+        marker.setFillColor({218, 184, 76});
+        window.draw(marker);
+    }
     for (const auto& checkpoint : checkpoints) {
         sf::RectangleShape pole({5.0f, 60.0f});
         pole.setFillColor({217, 198, 111});
