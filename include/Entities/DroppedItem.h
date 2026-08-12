@@ -1,20 +1,36 @@
-// Physics item on the ground that players can collect or throw to each other.
 #pragma once
 
 #include "Entities/Entity.h"
-#include "Entities/Inventory.h"
+#include <SFML/Graphics.hpp>
 
+// Enum representing the type of item dropped in the game world
+enum class ItemType {
+    COIN,
+    FOOD,
+    HEART,
+    BLOCK
+};
+
+// Represents a loot item floating in the world that players can pick up
 class DroppedItem : public Entity {
-public:
-    DroppedItem(sf::Vector2f position, ItemType type, int quantity = 1);
-    void update(float dt, const class TileMap& map);
-    void draw(sf::RenderWindow& window, sf::Vector2f camera) const override;
-
-    ItemType getType() const;
-    int getQuantity() const;
-
 private:
     ItemType type;
-    int quantity = 1;
-    float age = 0.0f;
+    sf::RectangleShape shape;
+    
+    float floatTimer; // Timer for floating sine wave animation
+    sf::Vector2f basePosition; // Original position anchor
+
+public:
+    // Constructor creating a dropped item of specified type at given position
+    DroppedItem(ItemType itemType, const sf::Vector2f& startPosition);
+    virtual ~DroppedItem() = default;
+
+    // Updates position with floating animation effect
+    void update(float dt) override;
+    
+    // Renders item to window if active
+    void draw(sf::RenderWindow& window) override;
+
+    // Returns item type
+    ItemType getType() const { return type; }
 };

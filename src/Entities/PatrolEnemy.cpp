@@ -1,8 +1,30 @@
 #include "Entities/PatrolEnemy.h"
-#include "World/Collision.h"
-#include "World/Level.h"
-#include "Utils/Constants.h"
-#include <cmath>
-PatrolEnemy::PatrolEnemy(sf::Vector2f pos) : Enemy(pos,{30,38},Constants::PATROL_ENEMY_HEALTH,{185,104,78}) {}
-void PatrolEnemy::update(float dt, Level& level) { velocity.x=static_cast<float>(facingDirection)*65; applyGravity(dt); velocity*=dt; Collision::resolveTileCollision(*this,level.getTileMap()); velocity/=dt; if(velocity.x==0)facingDirection*=-1; }
-void PatrolEnemy::draw(sf::RenderWindow& window,sf::Vector2f camera) const { sf::RectangleShape body(size); body.setPosition(position-camera); body.setFillColor(bodyColor); window.draw(body); drawHealthBar(window,camera); }
+
+// Initializes purple color and patrol parameters
+PatrolEnemy::PatrolEnemy(const sf::Vector2f& startPosition, float distance) 
+    : Enemy(startPosition), patrolDistance(distance)
+{
+    startX = startPosition.x;
+    speed = 50.0f;
+    direction = 1;
+    
+    body.setFillColor(sf::Color(128, 0, 128)); // Purple
+}
+
+// Moves enemy left and right between startX - distance and startX + distance
+void PatrolEnemy::update(float dt) {
+    if (!isAlive) return;
+
+    position.x += speed * direction * dt;
+
+    if (position.x > startX + patrolDistance) {
+        position.x = startX + patrolDistance;
+        direction = -1;
+    } else if (position.x < startX - patrolDistance) {
+        position.x = startX - patrolDistance;
+        direction = 1;
+    }
+
+    bounds.position = position;
+    body.setPosition(position);
+}

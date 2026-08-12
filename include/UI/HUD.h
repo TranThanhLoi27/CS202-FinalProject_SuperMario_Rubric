@@ -1,18 +1,32 @@
-// Draws health, hunger, inventory, and respawn status for active players.
 #pragma once
 
 #include <SFML/Graphics.hpp>
-#include <string>
+#include "Utils/Constants.h"
 
-class Level;
-class Player;
-
+// HUD class to display Health and Hunger bars for Player 1 and Player 2
 class HUD {
-public:
-    void draw(sf::RenderWindow& window, const Level& level) const;
-    static void drawText(sf::RenderWindow& window, const std::string& text, sf::Vector2f position, unsigned size, sf::Color color);
-
 private:
-    static void drawPanel(sf::RenderWindow& window, const Player& player, sf::Vector2f position, const std::string& label);
-    static void drawBar(sf::RenderWindow& window, sf::Vector2f position, float width, float height, float ratio, sf::Color color);
+    // Background bars
+    sf::RectangleShape p1HealthBg;
+    sf::RectangleShape p1HungerBg;
+    sf::RectangleShape p2HealthBg;
+    sf::RectangleShape p2HungerBg;
+
+    // Foreground dynamic bars
+    sf::RectangleShape p1HealthBar;
+    sf::RectangleShape p1HungerBar;
+    sf::RectangleShape p2HealthBar;
+    sf::RectangleShape p2HungerBar;
+
+public:
+    // Constructor setting up bar positions, dimensions, and colors
+    HUD();
+    ~HUD() = default;
+
+    // Updates bar widths based on current stats percentage
+    void update(float p1HP, float p1MaxHP, float p1Hunger, float p1MaxHunger,
+                float p2HP, float p2MaxHP, float p2Hunger, float p2MaxHunger);
+
+    // Draws all HUD elements onto the window
+    void draw(sf::RenderWindow& window);
 };

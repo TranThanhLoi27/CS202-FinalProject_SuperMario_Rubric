@@ -1,9 +1,10 @@
-// Random loot table used when enemies die.
 #pragma once
 
-#include "Entities/Inventory.h"
+#include "Entities/DroppedItem.h"
 
+// Helper class containing static logic for random loot generation
 class LootTable {
 public:
-    static ItemType roll();
+    // Returns a random ItemType based on defined percentage probabilities
+    static ItemType getRandomLoot();
 };
