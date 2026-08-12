@@ -51,6 +51,6 @@ const InputState& InputManager::getPlayer1Input() const {
     return p1State;
 }
 
-const InputState& InputManager::getPlayer2Input() const{
+const InputState& InputManager::getPlayer2Input() const {
     return p2State;
 }
