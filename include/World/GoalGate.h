@@ -5,8 +5,8 @@
 class GoalGate{
 public:
     GoalGate(sf::FloatRect bound, const sf::Texture& teture);
-    sf::FloatRect getBound();
-    void render(sf::RenderWindow& window) const;
+    const sf::FloatRect& getBound() const;
+    void render(sf::RenderWindow& window, sf::Vector2f camera) const;
 protected:
     sf::Sprite sprite;
 private:

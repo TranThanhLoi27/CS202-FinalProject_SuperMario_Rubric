@@ -1,29 +1,29 @@
+// Base enemy behavior for health, knockback, loot drop, and health bar drawing.
 #pragma once
+
 #include "Entities/Character.h"
-#include <SFML/Graphics.hpp>
+
+class Level;
+class Player;
 
 // Base class for all enemy types inheriting from Character
 class Enemy : public Character {
-protected:
-    float damage = 10.0f;
-    int scoreValue = 100;
-    sf::RectangleShape body;
-
 public:
-    // Constructor placing enemy at starting position
-    Enemy(const sf::Vector2f& startPosition);
+    Enemy(sf::Vector2f position, sf::Vector2f size, int health, sf::Color color);
     virtual ~Enemy() = default;
+    virtual void update(float dt, Level& level) = 0;
+    using Character::takeDamage;
+    void takeDamage(int damage, Level& level, const Player& source);
+    void addMaxHealth(int amount);
+    int getDamage() const;
 
-    // Reduces enemy health and marks isAlive as false if health reaching 0
-    virtual void takeDamage(float amount);
-
-    // Pure virtual update method to be implemented by enemy subtypes
-    virtual void update(float dt) = 0;
-
-    // Renders the enemy shape to screen
-    virtual void draw(sf::RenderWindow& window) override;
-
-    // Getters for enemy attributes
-    float getDamage() const { return damage; }
-    int getScoreValue() const { return scoreValue; }
+protected:
+    void tick(float dt);
+    void drawBody(sf::RenderWindow& window, sf::Vector2f camera) const;
+    void drawSprite(sf::RenderWindow& window, sf::Vector2f camera, const sf::Texture& texture) const;
+    void drawHealthBar(sf::RenderWindow& window, sf::Vector2f camera) const;
+    sf::Color bodyColor;
+    int damage = 1;
+    float hitTimer = 0.0f;
 };
+

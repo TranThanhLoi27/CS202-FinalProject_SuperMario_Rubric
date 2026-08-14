@@ -1,247 +1,246 @@
 #include "Entities/Player.h"
+#include "Entities/DroppedItem.h"
+#include "Entities/Tombstone.h"
+#include "Utils/Constants.h"
+#include "World/Collision.h"
+#include "World/Level.h"
+
 #include <algorithm>
 
-// Initializes player stats, shape color based on Player ID, and default state
-Player::Player(int id, const sf::Vector2f& startPosition)
-    : playerId(id)
-{
-    position = startPosition;
-    velocity = sf::Vector2f(0.0f, 0.0f);
-    bounds = sf::FloatRect(position, sf::Vector2f(32.0f, 64.0f));
-    isAlive = true;
+namespace {
+float approach(float value, float target, float step) {
+    return value < target ? std::min(value + step, target) : std::max(value - step, target);
+}
+}
 
-    health = 100.0f;
-    maxHealth = 100.0f;
-    gravity = Constants::GRAVITY;
-    isGrounded = false;
-    facingDir = RIGHT;
+const std::vector<Player::Profile>& Player::profiles() {
+    static const std::vector<Profile> p = {
+        {"ori", "High jump", "Jumps much higher.", "ori", {102, 183, 232}, 1, 1.22f, 1, 1, Constants::PLAYER_MAX_HEALTH, false},
+        {"Rush", "Fast move", "Runs faster.", "", {105, 214, 146}, 1.26f, 1, 1, 1, Constants::PLAYER_MAX_HEALTH, false},
+        {"Guard", "First hit guard", "Blocks first hit.", "", {238, 210, 96}, 1, 1, 1, 1, Constants::PLAYER_MAX_HEALTH, true},
+        {"Titan", "Tank health", "More health.", "", {227, 164, 85}, .92f, .95f, 1, 1, Constants::PLAYER_MAX_HEALTH + 3, false},
+        {"Feather", "Slow fall", "Falls slowly.", "", {194, 146, 232}, 1, 1, .72f, .66f, Constants::PLAYER_MAX_HEALTH, false},
+        {"Legend", "All traits", "All traits.", "", {245, 111, 211}, 1.26f, 1.22f, .72f, .66f, Constants::PLAYER_MAX_HEALTH + 3, true}
+    };
+    return p;
+}
 
-    hunger = 100.0f;
-    maxHunger = 100.0f;
+Player::Player(int id, sf::Vector2f pos, Profile p)
+    : Character(pos, {26, 42}, p.maxHealth),
+      color(p.color),
+      lastSafePosition(pos),
+      id(id),
+      spawn(pos),
+      firstHitGuardAvailable(p.blocksFirstHit),
+      sprites(CharacterSprites::get(p.spriteId)),
+      profile(std::move(p)) {
+    if (sprites) animator.play(sprites->idle);
+}
 
-    body.setSize(sf::Vector2f(32.0f, 64.0f));
-    if (playerId == 1) {
-        body.setFillColor(sf::Color::Red);
+void Player::updateAnimation(float dt) {
+    if (!sprites) return;
+
+    if (attackTimer > 0.0f) {
+        animator.play(sprites->attack);
+        animator.update(dt);
+        return;
+    }
+
+    if (!onGround) {
+        animator.play(sprites->jump);
+        return;
+    }
+
+    if (std::abs(velocity.x) > sprites->runSpeedThreshold) {
+        animator.play(sprites->run);
+        animator.update(dt);
+        return;
+    }
+
+    animator.play(sprites->idle);
+}
+
+void Player::update(float dt, const InputState& input, Level& level) {
+    attackTimer = std::max(0.f, attackTimer - dt);
+    dodgeTimer = std::max(0.f, dodgeTimer - dt);
+    dodgeCooldownTimer = std::max(0.f, dodgeCooldownTimer - dt);
+    hurtTimer = std::max(0.f, hurtTimer - dt);
+    inventory.tick(dt);
+
+    if (respawnTimer > 0) {
+        if ((respawnTimer -= dt) <= 0) {
+            position = spawn;
+            velocity = {};
+            health = maxHealth;
+            hunger = 50;
+            firstHitGuardAvailable = profile.blocksFirstHit;
+            if (sprites) animator.play(sprites->idle);
+        }
+        return;
+    }
+
+    const int move = int(input.moveRight) - int(input.moveLeft);
+
+    velocity.x = approach(
+        velocity.x,
+        move * Constants::PLAYER_SPEED * profile.speedMultiplier,
+        (onGround
+            ? Constants::PLAYER_GROUND_ACCELERATION
+            : Constants::PLAYER_AIR_ACCELERATION) * dt
+    );
+
+    if (move != 0)
+        facingDirection = move;
+
+    coyoteTimer = onGround ? Constants::PLAYER_COYOTE_TIME : std::max(0.f, coyoteTimer - dt);
+
+    if (input.jump && coyoteTimer > 0) {
+        velocity.y =
+            Constants::PLAYER_JUMP_SPEED * profile.jumpMultiplier;
+
+        coyoteTimer = 0;
+    }
+
+    if (input.attack)
+        attackTimer = 0.18f;
+
+    if (input.dodge && dodgeCooldownTimer <= 0) {
+        dodgeTimer = Constants::PLAYER_DODGE_DURATION;
+        dodgeCooldownTimer = Constants::PLAYER_DODGE_COOLDOWN;
+    }
+
+    if (input.slotPrev) inventory.cycleSlot(-1);
+    if (input.slotNext) inventory.cycleSlot(1);
+    if (input.slotSelect >= 0) inventory.selectSlot(input.slotSelect);
+    if (input.useItem) useSelectedItem(level);
+
+    velocity.y = std::min(
+        Constants::MAX_FALL_SPEED * profile.maxFallMultiplier,
+        velocity.y +
+            Constants::GRAVITY *
+            profile.gravityMultiplier *
+            dt
+    );
+
+    velocity *= dt;
+
+    Collision::resolveTileCollision(
+        *this,
+        level.getTileMap()
+    );
+
+    velocity /= dt;
+
+    updateAnimation(dt);
+
+    if (onGround)
+        lastSafePosition = position;
+
+    if (position.y > level.getTileMap().heightPixels() + 260)
+        die(level, true);
+}
+
+void Player::drawSprite(sf::RenderWindow& window, sf::Vector2f camera) const {
+    if (!sprites || !sprites->texture) return;
+
+    sf::Sprite sprite(*sprites->texture);
+    const float scale = size.y / static_cast<float>(sprites->frameHeight);
+
+    sprite.setTextureRect(animator.getFrameRect());
+    sprite.setOrigin({
+        sprites->frameWidth * 0.5f,
+        static_cast<float>(sprites->frameHeight)
+    });
+    sprite.setScale({
+        facingDirection > 0 ? scale : -scale,
+        scale
+    });
+    sprite.setPosition({
+        position.x - camera.x + size.x * 0.5f,
+        position.y - camera.y + size.y
+    });
+    window.draw(sprite);
+}
+
+void Player::draw(
+    sf::RenderWindow& window,
+    sf::Vector2f camera
+) const {
+    if (isRespawning())
+        return;
+
+    if (sprites) {
+        drawSprite(window, camera);
     } else {
-        body.setFillColor(sf::Color::Blue);
-    }
-    body.setPosition(position);
+        sf::RectangleShape body(size);
 
-    // Visual indicator for attack hitbox (transparent yellow)
-    attackHitboxVisual.setFillColor(sf::Color(255, 255, 0, 128));
-}
+        body.setPosition(position - camera);
 
-// Basic update when no player input is supplied
-void Player::update(float dt) {
-    velocity.y += gravity * dt;
-    position += velocity * dt;
-    bounds.position = position;
-    body.setPosition(position);
+        body.setFillColor(
+            sf::Color(
+                color.r,
+                color.g,
+                color.b,
+                static_cast<std::uint8_t>(
+                    isDodging() ? 110 : 255
+                )
+            )
+        );
 
-    // Hunger decays by 1 point per second
-    if (hunger > 0.0f) {
-        hunger -= 1.0f * dt;
-        if (hunger < 0.0f) hunger = 0.0f;
-    }
-    // Starvation causes health to decay by 2 points per second
-    if (hunger <= 0.0f) {
-        health -= 2.0f * dt;
-        if (health <= 0.0f) {
-            health = 0.0f;
-            kill();
-        }
-    }
-
-    // Update attack timers
-    if (attackCooldownTimer > 0.0f) {
-        attackCooldownTimer -= dt;
-    }
-    if (isAttacking) {
-        attackTimer -= dt;
-        if (attackTimer <= 0.0f) {
-            isAttacking = false;
-        } else {
-            sf::FloatRect hitbox = getAttackHitbox();
-            attackHitboxVisual.setPosition(hitbox.position);
-            attackHitboxVisual.setSize(hitbox.size);
-        }
-    }
-}
-
-// Comprehensive update function handling inputs, movement physics, jumping, attacks, and status decay
-void Player::update(float dt, const InputState& input) {
-    // 1. Smooth horizontal movement with acceleration and friction
-    float targetSpeed = 0.0f;
-    if (input.moveLeft.isDown) {
-        targetSpeed = -Constants::PLAYER_SPEED;
-        facingDir = LEFT;
-    } else if (input.moveRight.isDown) {
-        targetSpeed = Constants::PLAYER_SPEED;
-        facingDir = RIGHT;
-    }
-
-    const float acceleration = 1200.0f;
-    const float friction = 1000.0f;
-
-    if (targetSpeed != 0.0f) {
-        if (velocity.x < targetSpeed) {
-            velocity.x = std::min(velocity.x + acceleration * dt, targetSpeed);
-        } else if (velocity.x > targetSpeed) {
-            velocity.x = std::max(velocity.x - acceleration * dt, targetSpeed);
-        }
-    } else {
-        if (velocity.x > 0.0f) {
-            velocity.x = std::max(velocity.x - friction * dt, 0.0f);
-        } else if (velocity.x < 0.0f) {
-            velocity.x = std::min(velocity.x + friction * dt, 0.0f);
-        }
-    }
-
-    // 2. Jump handling
-    if ((input.jump.isDown || input.jump.isPressed) && isGrounded) {
-        velocity.y = Constants::PLAYER_JUMP_SPEED;
-        isGrounded = false;
-    }
-
-    // 3. Apply gravity
-    velocity.y += gravity * dt;
-    if (velocity.y > 1000.0f) {
-        velocity.y = 1000.0f;
-    }
-
-    // 4. Update Position & Bounds
-    position += velocity * dt;
-    bounds.position = position;
-
-    // 5. Update visual shape position
-    body.setPosition(position);
-
-    // 6. Update attack state and timers
-    if (attackCooldownTimer > 0.0f) {
-        attackCooldownTimer -= dt;
-    }
-    
-    if (input.attack.isPressed) {
-        attack();
-    }
-
-    if (input.placeBlock.isPressed) {
-        if (auto block = placeBlock()) {
-            pendingPlacedBlocks.push_back(*block);
-        }
-    }
-
-    if (isAttacking) {
-        attackTimer -= dt;
-        if (attackTimer <= 0.0f) {
-            isAttacking = false;
-        } else {
-            sf::FloatRect hitbox = getAttackHitbox();
-            attackHitboxVisual.setPosition(hitbox.position);
-            attackHitboxVisual.setSize(hitbox.size);
-        }
-    }
-
-    // 7. Hunger and starvation health decay
-    if (hunger > 0.0f) {
-        hunger -= 1.0f * dt;
-        if (hunger < 0.0f) hunger = 0.0f;
-    }
-
-    if (hunger <= 0.0f) {
-        health -= 2.0f * dt;
-        if (health <= 0.0f) {
-            health = 0.0f;
-            kill();
-        }
-    }
-}
-
-// Renders the player shape and attack visual if currently attacking
-void Player::draw(sf::RenderWindow& window) {
-    if (getIsAlive()) {
         window.draw(body);
-        if (isAttacking) {
-            window.draw(attackHitboxVisual);
+    }
+}
+
+void Player::takeDamage(int d, float knockback) { if (isRespawning()) return; if (firstHitGuardAvailable) { firstHitGuardAvailable = false; return; } Character::takeDamage(d, knockback); }
+void Player::heal(int a) { health = std::min(maxHealth, health + a); }
+void Player::restoreHunger(int a) { hunger = std::min<float>(Constants::PLAYER_MAX_HUNGER, hunger + a); }
+void Player::die(Level& l, bool fell) { if (isRespawning()) return; auto stored = inventory.takeAll(); l.addTombstone(std::make_unique<Tombstone>(fell ? lastSafePosition : position, stored, id)); health = 0; respawnTimer = 2; diedBefore = true; recoveredTombstone = false; }
+bool Player::isRespawning() const { return respawnTimer > 0; }
+bool Player::isDodging() const { return dodgeTimer > 0 && !isRespawning(); }
+bool Player::hasCollectedOwnTombstone() const { return recoveredTombstone; }
+sf::FloatRect Player::attackBox() const { return {{facingDirection > 0 ? position.x + size.x - 2 : position.x - 34, position.y + 8}, {36, 28}}; }
+bool Player::isAttacking() const { return attackTimer > 0 && !isRespawning(); }
+int Player::getId() const { return id; }
+int Player::getFacingDirection() const { return facingDirection; }
+float Player::getHunger() const { return hunger; }
+float Player::getRespawnTimer() const { return respawnTimer; }
+const Player::Profile& Player::getProfile() const { return profile; }
+sf::Vector2f Player::getSpawn() const { return spawn; }
+void Player::setSpawn(sf::Vector2f p) { spawn = p; lastSafePosition = p; }
+void Player::markTombstoneRecovered() { recoveredTombstone = true; }
+bool Player::hasDiedBefore() const { return diedBefore; }
+int Player::getSelectedSlot() const { return inventory.selectedSlot; }
+float Player::getActionTimer() const { return inventory.actionTimer; }
+
+void Player::useSelectedItem(Level& level) {
+    if (!inventory.canAct() || isRespawning()) return;
+
+    const int slot = inventory.selectedSlot;
+    if (slot < FOOD_TYPE_COUNT) {
+        if (inventory.getSlot(slot) <= 0) return;
+        inventory.removeFromSlot(slot);
+        restoreHunger(static_cast<int>(Constants::PLAYER_MAX_HUNGER * Constants::FOOD_HUNGER_PERCENT[slot]));
+        heal(1);
+        inventory.startAction(Constants::EAT_ACTION_TIME);
+        return;
+    }
+    if (slot == COIN_SLOT_INDEX) {
+        if (inventory.getSlot(slot) <= 0) return;
+        inventory.removeFromSlot(slot);
+        auto item = std::make_unique<DroppedItem>(
+            position + sf::Vector2f(static_cast<float>(facingDirection) * 28.0f, 10.0f),
+            ItemType::Coin,
+            1
+        );
+        item->velocity = {static_cast<float>(facingDirection) * 330.0f, -240.0f};
+        level.addDroppedItem(std::move(item));
+        inventory.startAction(Constants::DROP_COIN_ACTION_TIME);
+        return;
+    }
+    if (slot == BLOCK_SLOT_INDEX) {
+        if (inventory.getSlot(slot) <= 0) return;
+        if (level.tryPlaceBlock(*this)) {
+            inventory.startAction(Constants::PLACE_BLOCK_ACTION_TIME);
         }
     }
-}
-
-// Reduces player health when damaged
-void Player::takeDamage(int damage) {
-    health -= static_cast<float>(damage);
-    if (health <= 0.0f) {
-        health = 0.0f;
-        kill();
-    }
-}
-
-// Restores player health up to maxHealth
-void Player::heal(int amount) {
-    health = std::min(health + static_cast<float>(amount), maxHealth);
-}
-
-// Restores hunger points up to maxHunger
-void Player::restoreHunger(int amount) {
-    hunger = std::min(hunger + static_cast<float>(amount), maxHunger);
-}
-
-// Check if player is dead
-bool Player::isDead() const {
-    return !getIsAlive();
-}
-
-// Returns direction as an integer (-1 for Left, 1 for Right)
-int Player::getFacingDirection() const {
-    return (facingDir == LEFT) ? -1 : 1;
-}
-
-// Triggers an attack swing if not on cooldown
-void Player::attack() {
-    if (attackCooldownTimer <= 0.0f) {
-        isAttacking = true;
-        attackTimer = 0.2f;
-        attackCooldownTimer = 0.5f;
-    }
-}
-
-// Calculates attack hitbox rectangle in front of the player
-sf::FloatRect Player::getAttackHitbox() const {
-    float hitboxWidth = 40.0f;
-    float hitboxHeight = 64.0f;
-    
-    float xPos = position.x;
-    if (facingDir == RIGHT) {
-        xPos += 32.0f; // Position right in front of player
-    } else {
-        xPos -= hitboxWidth; // Position to the left of player
-    }
-    
-    return sf::FloatRect(sf::Vector2f(xPos, position.y), sf::Vector2f(hitboxWidth, hitboxHeight));
-}
-
-// Places a block if player has one in inventory, returning the block object
-std::optional<PlacedBlock> Player::placeBlock() {
-    if (inventory.getItemCount(ItemType::BLOCK) > 0) {
-        inventory.removeItem(ItemType::BLOCK, 1);
-        
-        float blockX = position.x;
-        if (facingDir == RIGHT) {
-            blockX += 32.0f + 5.0f; // Place slightly in front
-        } else {
-            blockX -= 32.0f + 5.0f; // Place slightly behind
-        }
-        
-        // Align block vertically to player's center/bottom
-        sf::Vector2f blockPos(blockX, position.y + 32.0f);
-        return PlacedBlock(blockPos);
-    }
-    return std::nullopt;
-}
-
-// Retrieves all recently placed blocks and clears the internal queue
-std::vector<PlacedBlock> Player::getAndClearPendingBlocks() {
-    auto copy = pendingPlacedBlocks;
-    pendingPlacedBlocks.clear();
-    return copy;
 }

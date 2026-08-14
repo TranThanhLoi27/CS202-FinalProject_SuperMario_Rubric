@@ -1,28 +1,24 @@
+// Loads and plays optional sound effects and background music.
 #pragma once
 
-#include<SFML/Graphics.hpp>
-#include<SFML/Audio.hpp>
+#include <SFML/Audio.hpp>
+#include <list>
+#include <map>
+#include <string>
 
-#include<list>
-#include<map>
-#include<string>
-class AudioManager{
+class AudioManager {
 public:
-    //load buffers
-    bool LoadSound(const std::string& id, const std::string& path);
-    //play all buffers
-    void PlaySound(const std::string& id);
-    //play music
-    void PlayMusic(const std::string& path, bool loop = true);
-    //change volume
-    void SetVolume(const float& volume);
-    //remote buffer was stopped
-    void Update();
-    //remote all buffers & sounds
-    void Clear();
+    bool loadSound(const std::string& id, const std::string& path);
+    bool playMusic(const std::string& path, bool loop = true);
+    void play(const std::string& id);
+    void setMasterVolume(float volume);
+    float getMasterVolume() const;
+    void update();
+    void clear();
+
 private:
     std::map<std::string, sf::SoundBuffer> buffers;
     std::list<sf::Sound> sounds;
     sf::Music music;
-    float mastervolume = 70.f;
+    float masterVolume = 70.0f;
 };

@@ -3,10 +3,13 @@
 enum class GameState{
     Menu,
     Info,
+    LevelSelect,
+    DifficultySelect,
+    Shop,
     CharacterSelect,
     Controls,
     Playing,
-    Pause,
+    Paused,
     GameOver,
     Victory,
 };

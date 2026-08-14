@@ -4,7 +4,7 @@
 
 namespace MathUtils {
 
-bool intersect(const sf::FloatRect& rec1, const sf::FloatRect& rec2){
+bool intersects(const sf::FloatRect& rec1, const sf::FloatRect& rec2){
     return rec1.position.x < rec2.position.x + rec2.size.x && 
            rec1.position.x + rec1.size.x > rec2.position.x &&
            rec1.position.y < rec2.position.y + rec2.size.y &&
