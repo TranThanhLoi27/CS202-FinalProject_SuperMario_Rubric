@@ -20,6 +20,7 @@ public:
 protected:
     void tick(float dt);
     void drawBody(sf::RenderWindow& window, sf::Vector2f camera) const;
+    void drawSprite(sf::RenderWindow& window, sf::Vector2f camera, const sf::Texture& texture) const;
     void drawHealthBar(sf::RenderWindow& window, sf::Vector2f camera) const;
     sf::Color bodyColor;
     int damage = 1;

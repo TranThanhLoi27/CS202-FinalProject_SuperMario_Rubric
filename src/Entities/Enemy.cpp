@@ -40,6 +40,17 @@ void Enemy::drawBody(sf::RenderWindow& window, sf::Vector2f camera) const {
     window.draw(body);
 }
 
+void Enemy::drawSprite(sf::RenderWindow& window, sf::Vector2f camera, const sf::Texture& texture) const {
+    sf::Sprite sprite(texture);
+    sprite.setPosition(position - camera);
+    if (facingDirection < 0) {
+        sprite.setOrigin({texture.getSize().x * 0.5f, 0.0f});
+        sprite.setPosition(position - camera + sf::Vector2f(texture.getSize().x * 0.5f, 0.0f));
+        sprite.setScale({-1.0f, 1.0f});
+    }
+    window.draw(sprite);
+}
+
 void Enemy::drawHealthBar(sf::RenderWindow& window, sf::Vector2f camera) const {
     if (health >= maxHealth) return;
     sf::RectangleShape back({size.x, 4.0f});

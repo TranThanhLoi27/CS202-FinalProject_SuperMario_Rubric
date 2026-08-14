@@ -11,9 +11,11 @@ class HUD {
 public:
     // The font and textures are owned by AssetManager and must outlive the HUD.
     static void setFont(const sf::Font& font);
-    static void setTextures(const sf::Texture& heart, const sf::Texture& meat);
+    static void setTextures(const sf::Texture& heart, const sf::Texture& meat,
+                              const sf::Texture& food, const sf::Texture& coin, const sf::Texture& solid);
     void draw(sf::RenderWindow& window, const Level& level) const;
     static void drawText(sf::RenderWindow& window, const std::string& text, sf::Vector2f position, unsigned size, sf::Color color);
+    static void drawTextCentered(sf::RenderWindow& window, const std::string& text, sf::Vector2f center, unsigned size, sf::Color color);
     static void drawHearts(sf::RenderWindow& window, sf::Vector2f position, float health, int maxHealth);
     static void drawHungerBar(sf::RenderWindow& window, sf::Vector2f position, float hunger, float maxHunger);
 

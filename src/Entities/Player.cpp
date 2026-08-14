@@ -1,4 +1,5 @@
 #include "Entities/Player.h"
+#include "Entities/DroppedItem.h"
 #include "Entities/Tombstone.h"
 #include "Utils/Constants.h"
 #include "World/Collision.h"
@@ -33,12 +34,17 @@ Player::Player(int id, sf::Vector2f pos, Profile p)
       firstHitGuardAvailable(p.blocksFirstHit),
       sprites(CharacterSprites::get(p.spriteId)),
       profile(std::move(p)) {
-    inventory.block = Constants::START_BLOCK_COUNT;
     if (sprites) animator.play(sprites->idle);
 }
 
 void Player::updateAnimation(float dt) {
     if (!sprites) return;
+
+    if (attackTimer > 0.0f) {
+        animator.play(sprites->attack);
+        animator.update(dt);
+        return;
+    }
 
     if (!onGround) {
         animator.play(sprites->jump);
@@ -59,6 +65,7 @@ void Player::update(float dt, const InputState& input, Level& level) {
     dodgeTimer = std::max(0.f, dodgeTimer - dt);
     dodgeCooldownTimer = std::max(0.f, dodgeCooldownTimer - dt);
     hurtTimer = std::max(0.f, hurtTimer - dt);
+    inventory.tick(dt);
 
     if (respawnTimer > 0) {
         if ((respawnTimer -= dt) <= 0) {
@@ -102,11 +109,10 @@ void Player::update(float dt, const InputState& input, Level& level) {
         dodgeCooldownTimer = Constants::PLAYER_DODGE_COOLDOWN;
     }
 
-    if (input.placeBlock)
-        level.tryPlaceBlock(*this);
-
-    if (input.throwItem)
-        level.throwItem(*this);
+    if (input.slotPrev) inventory.cycleSlot(-1);
+    if (input.slotNext) inventory.cycleSlot(1);
+    if (input.slotSelect >= 0) inventory.selectSlot(input.slotSelect);
+    if (input.useItem) useSelectedItem(level);
 
     velocity.y = std::min(
         Constants::MAX_FALL_SPEED * profile.maxFallMultiplier,
@@ -183,23 +189,6 @@ void Player::draw(
 
         window.draw(body);
     }
-
-    if (isAttacking()) {
-        const auto box = attackBox();
-
-        sf::RectangleShape slash(box.size);
-
-        slash.setPosition(box.position - camera);
-
-        slash.setFillColor({
-            255,
-            229,
-            128,
-            150
-        });
-
-        window.draw(slash);
-    }
 }
 
 void Player::takeDamage(int d, float knockback) { if (isRespawning()) return; if (firstHitGuardAvailable) { firstHitGuardAvailable = false; return; } Character::takeDamage(d, knockback); }
@@ -220,3 +209,38 @@ sf::Vector2f Player::getSpawn() const { return spawn; }
 void Player::setSpawn(sf::Vector2f p) { spawn = p; lastSafePosition = p; }
 void Player::markTombstoneRecovered() { recoveredTombstone = true; }
 bool Player::hasDiedBefore() const { return diedBefore; }
+int Player::getSelectedSlot() const { return inventory.selectedSlot; }
+float Player::getActionTimer() const { return inventory.actionTimer; }
+
+void Player::useSelectedItem(Level& level) {
+    if (!inventory.canAct() || isRespawning()) return;
+
+    const int slot = inventory.selectedSlot;
+    if (slot < FOOD_TYPE_COUNT) {
+        if (inventory.getSlot(slot) <= 0) return;
+        inventory.removeFromSlot(slot);
+        restoreHunger(static_cast<int>(Constants::PLAYER_MAX_HUNGER * Constants::FOOD_HUNGER_PERCENT[slot]));
+        heal(1);
+        inventory.startAction(Constants::EAT_ACTION_TIME);
+        return;
+    }
+    if (slot == COIN_SLOT_INDEX) {
+        if (inventory.getSlot(slot) <= 0) return;
+        inventory.removeFromSlot(slot);
+        auto item = std::make_unique<DroppedItem>(
+            position + sf::Vector2f(static_cast<float>(facingDirection) * 28.0f, 10.0f),
+            ItemType::Coin,
+            1
+        );
+        item->velocity = {static_cast<float>(facingDirection) * 330.0f, -240.0f};
+        level.addDroppedItem(std::move(item));
+        inventory.startAction(Constants::DROP_COIN_ACTION_TIME);
+        return;
+    }
+    if (slot == BLOCK_SLOT_INDEX) {
+        if (inventory.getSlot(slot) <= 0) return;
+        if (level.tryPlaceBlock(*this)) {
+            inventory.startAction(Constants::PLACE_BLOCK_ACTION_TIME);
+        }
+    }
+}

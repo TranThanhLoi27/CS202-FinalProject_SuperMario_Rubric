@@ -50,6 +50,9 @@ public:
     void setSpawn(sf::Vector2f spawnPosition);
     void markTombstoneRecovered();
     bool hasDiedBefore() const;
+    int getSelectedSlot() const;
+    float getActionTimer() const;
+    void useSelectedItem(Level& level);
     static const std::vector<Profile>& profiles();
 
     sf::Color color;

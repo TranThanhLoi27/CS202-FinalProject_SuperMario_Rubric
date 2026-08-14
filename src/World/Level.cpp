@@ -1,8 +1,8 @@
 #include "World/Level.h"
 
 #include "Combat/DamageSystem.h"
-#include "Combat/LootTable.h"
 #include "Entities/BossEnemy.h"
+#include "Entities/FlyingEnemy.h"
 #include "Entities/PatrolEnemy.h"
 #include "Entities/ShooterEnemy.h"
 #include "Utils/Constants.h"
@@ -13,6 +13,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <random>
 #include <utility>
 
 const sf::Texture* Level::solidTexture = nullptr;
@@ -73,6 +74,7 @@ void Level::spawnFromMap() {
     for (const auto& spawn : enemySpawns) {
         if (spawn.first == 'P') enemies.push_back(std::make_unique<PatrolEnemy>(spawn.second));
         if (spawn.first == 'R') enemies.push_back(std::make_unique<ShooterEnemy>(spawn.second));
+        if (spawn.first == 'F') enemies.push_back(std::make_unique<FlyingEnemy>(spawn.second));
         if (spawn.first == 'B') enemies.push_back(std::make_unique<BossEnemy>(spawn.second + sf::Vector2f(0.0f, -46.0f)));
         if (!enemies.empty()) enemies.back()->addMaxHealth(pendingEnemyHealthBonus);
     }
@@ -144,29 +146,27 @@ void Level::addTombstone(std::unique_ptr<Tombstone> tombstone) {
 }
 
 void Level::dropLoot(sf::Vector2f position) {
-    const ItemType type = LootTable::roll();
-    const int quantity = type == ItemType::Coin ? 2 : 1;
-    addDroppedItem(std::make_unique<DroppedItem>(position, type, quantity));
-}
+    static std::mt19937 rng(std::random_device{}());
+    std::uniform_real_distribution<float> chance(0.0f, 1.0f);
+    const float roll = chance(rng);
 
-void Level::tryPlaceBlock(Player& player) {
-    BlockPlacement::tryPlaceBlock(player, map, players, enemies, droppedItems, tombstones);
-}
-
-void Level::throwItem(Player& player) {
-    const ItemType order[] = {ItemType::Block, ItemType::Food, ItemType::Heart, ItemType::Coin};
-    for (ItemType type : order) {
-        if (player.getInventory().count(type) <= 0) continue;
-        player.getInventory().remove(type);
-        auto item = std::make_unique<DroppedItem>(
-            player.position + sf::Vector2f(static_cast<float>(player.getFacingDirection()) * 28.0f, 10.0f),
-            type,
-            1
-        );
-        item->velocity = {static_cast<float>(player.getFacingDirection()) * 330.0f, -240.0f};
-        addDroppedItem(std::move(item));
+    if (roll < 0.55f) {
+        std::uniform_int_distribution<int> coinAmount(2, 6);
+        addDroppedItem(std::make_unique<DroppedItem>(position, ItemType::Coin, coinAmount(rng)));
+        if (roll < 0.20f) {
+            std::uniform_int_distribution<int> variantDist(0, FOOD_TYPE_COUNT - 1);
+            addDroppedItem(std::make_unique<DroppedItem>(position + sf::Vector2f(12.0f, -8.0f),
+                                                          ItemType::Food, 1, variantDist(rng)));
+        }
         return;
     }
+
+    std::uniform_int_distribution<int> variantDist(0, FOOD_TYPE_COUNT - 1);
+    addDroppedItem(std::make_unique<DroppedItem>(position, ItemType::Food, 1, variantDist(rng)));
+}
+
+bool Level::tryPlaceBlock(Player& player) {
+    return BlockPlacement::tryPlaceBlock(player, map, players, enemies, droppedItems, tombstones);
 }
 
 void Level::limitPlayerDistance() {
@@ -204,9 +204,15 @@ void Level::handlePickups() {
         if (player->isRespawning()) continue;
         for (auto& item : droppedItems) {
             if (!item->isAlive() || !MathUtils::intersects(player->getBounds(), item->getBounds())) continue;
-            player->getInventory().add(item->getType(), item->getQuantity());
-            if (item->getType() == ItemType::Food) player->restoreHunger(28 * item->getQuantity());
-            if (item->getType() == ItemType::Heart) player->heal(item->getQuantity());
+            if (item->getType() == ItemType::Food) {
+                player->getInventory().addFood(item->getFoodVariant(), item->getQuantity());
+            } else if (item->getType() == ItemType::Coin) {
+                player->getInventory().addToSlot(COIN_SLOT_INDEX, item->getQuantity());
+            } else if (item->getType() == ItemType::Block) {
+                player->getInventory().addToSlot(BLOCK_SLOT_INDEX, item->getQuantity());
+            } else if (item->getType() == ItemType::Heart) {
+                player->heal(item->getQuantity());
+            }
             item->kill();
         }
         for (auto& tombstone : tombstones) {
@@ -276,7 +282,7 @@ bool Level::allDead() const {
 
 int Level::collectedCoins() const {
     int total = 0;
-    for (const auto& player : players) total += player->getInventory().coin;
+    for (const auto& player : players) total += player->getInventory().getSlot(COIN_SLOT_INDEX);
     return total;
 }
 

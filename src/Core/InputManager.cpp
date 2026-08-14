@@ -3,13 +3,30 @@
 
 #include <algorithm>
 
+namespace {
+int pressedDigitSlot() {
+    static const sf::Keyboard::Key keys[] = {
+        sf::Keyboard::Key::Num1, sf::Keyboard::Key::Num2, sf::Keyboard::Key::Num3,
+        sf::Keyboard::Key::Num4, sf::Keyboard::Key::Num5, sf::Keyboard::Key::Num6
+    };
+    for (int i = 0; i < 6; ++i) {
+        if (sf::Keyboard::isKeyPressed(keys[i])) return i;
+    }
+    return -1;
+}
+}
+
 void InputManager::update() {
     if (relevantKeys.empty()) {
         relevantKeys = {
             sf::Keyboard::Key::A, sf::Keyboard::Key::D, sf::Keyboard::Key::W,
-            sf::Keyboard::Key::S, sf::Keyboard::Key::F, sf::Keyboard::Key::H, sf::Keyboard::Key::R,
+            sf::Keyboard::Key::S, sf::Keyboard::Key::F, sf::Keyboard::Key::H,
+            sf::Keyboard::Key::Q, sf::Keyboard::Key::E,
             sf::Keyboard::Key::Left, sf::Keyboard::Key::Right, sf::Keyboard::Key::Up,
             sf::Keyboard::Key::J, sf::Keyboard::Key::L, sf::Keyboard::Key::O,
+            sf::Keyboard::Key::U, sf::Keyboard::Key::I,
+            sf::Keyboard::Key::Num1, sf::Keyboard::Key::Num2, sf::Keyboard::Key::Num3,
+            sf::Keyboard::Key::Num4, sf::Keyboard::Key::Num5, sf::Keyboard::Key::Num6,
             sf::Keyboard::Key::Enter, sf::Keyboard::Key::P, sf::Keyboard::Key::I,
             sf::Keyboard::Key::Escape, sf::Keyboard::Key::Down
         };
@@ -21,6 +38,7 @@ void InputManager::update() {
         if (sf::Keyboard::isKeyPressed(key)) currentKeys.push_back(key);
     }
 
+    const int digitSlot = pressedDigitSlot();
     player1 = {
         down(sf::Keyboard::Key::A),
         down(sf::Keyboard::Key::D),
@@ -30,7 +48,9 @@ void InputManager::update() {
         false,
         pressed(sf::Keyboard::Key::S),
         pressed(sf::Keyboard::Key::H),
-        pressed(sf::Keyboard::Key::R)
+        pressed(sf::Keyboard::Key::Q),
+        pressed(sf::Keyboard::Key::E),
+        digitSlot
     };
     player2 = {
         down(sf::Keyboard::Key::Left),
@@ -41,7 +61,9 @@ void InputManager::update() {
         false,
         pressed(sf::Keyboard::Key::Down),
         pressed(sf::Keyboard::Key::L),
-        pressed(sf::Keyboard::Key::O)
+        pressed(sf::Keyboard::Key::U),
+        pressed(sf::Keyboard::Key::I),
+        -1
     };
 }
 
@@ -60,4 +82,3 @@ bool InputManager::pressed(sf::Keyboard::Key key) const {
 bool InputManager::down(sf::Keyboard::Key key) const {
     return std::find(currentKeys.begin(), currentKeys.end(), key) != currentKeys.end();
 }
-

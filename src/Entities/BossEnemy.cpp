@@ -3,6 +3,7 @@
 
 #include "Entities/Player.h"
 #include "Entities/Projectile.h"
+#include "Graphics/EnemySprites.h"
 #include "Utils/Constants.h"
 #include "World/Collision.h"
 #include "World/Level.h"
@@ -51,14 +52,18 @@ void BossEnemy::update(float dt, Level& level) {
 }
 
 void BossEnemy::draw(sf::RenderWindow& window, sf::Vector2f camera) const {
-    sf::RectangleShape shell(size);
-    shell.setPosition(position - camera);
-    shell.setFillColor({91, 32, 43});
-    window.draw(shell);
+    if (EnemyTextures::boss) {
+        drawSprite(window, camera, *EnemyTextures::boss);
+    } else {
+        sf::RectangleShape shell(size);
+        shell.setPosition(position - camera);
+        shell.setFillColor({91, 32, 43});
+        window.draw(shell);
 
-    sf::RectangleShape core(size - sf::Vector2f(16.0f, 10.0f));
-    core.setPosition(position - camera + sf::Vector2f(8.0f, 8.0f));
-    core.setFillColor(bodyColor);
-    window.draw(core);
+        sf::RectangleShape core(size - sf::Vector2f(16.0f, 10.0f));
+        core.setPosition(position - camera + sf::Vector2f(8.0f, 8.0f));
+        core.setFillColor(bodyColor);
+        window.draw(core);
+    }
     drawHealthBar(window, camera);
 }

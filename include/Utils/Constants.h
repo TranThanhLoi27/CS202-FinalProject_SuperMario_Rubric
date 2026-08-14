@@ -31,7 +31,21 @@ constexpr int PATROL_ENEMY_HEALTH = 2;
 constexpr int SHOOTER_ENEMY_HEALTH = 3;
 constexpr int BOSS_HEALTH = 20;
 
-constexpr int START_BLOCK_COUNT = 3;
+constexpr int START_BLOCK_COUNT = 2;
 constexpr unsigned WINDOW_WIDTH = 1280;
 constexpr unsigned WINDOW_HEIGHT = 720;
+
+constexpr int ITEM_ICON_SIZE = 15;
+constexpr int COIN_FRAME_COUNT = 6;
+constexpr int PROJECTILE_FRAME_COUNT = 4;
+
+constexpr float EAT_ACTION_TIME = 0.45f;
+constexpr float DROP_COIN_ACTION_TIME = 0.35f;
+constexpr float PLACE_BLOCK_ACTION_TIME = 0.25f;
+
+constexpr float FOOD_HUNGER_PERCENT[4] = {0.05f, 0.10f, 0.15f, 0.20f};
+
+constexpr int MATCH_COIN_BONUS = 30;
+constexpr float GOAL_WIDTH = 170.0f;
+constexpr float GOAL_HEIGHT = 256.0f;
 }

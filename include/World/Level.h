@@ -39,8 +39,7 @@ public:
     void addDroppedItem(std::unique_ptr<DroppedItem> item);
     void addTombstone(std::unique_ptr<Tombstone> tombstone);
     void dropLoot(sf::Vector2f position);
-    void tryPlaceBlock(Player& player);
-    void throwItem(Player& player);
+    bool tryPlaceBlock(Player& player);
     void limitPlayerDistance();
     void eraseDeadObjects();
     bool hasWon() const;

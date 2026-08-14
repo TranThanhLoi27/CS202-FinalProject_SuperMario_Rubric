@@ -13,6 +13,7 @@ struct CharacterSpriteSet {
     Animation run;
     Animation idle;
     Animation jump;
+    Animation attack;
     float runSpeedThreshold = 5.0f;
 
     sf::IntRect frameRect(int frameIndex) const;

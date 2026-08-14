@@ -30,7 +30,7 @@ bool LevelLoader::load(const std::string& path,
             if(ch == '#')out.solidTiles[y][x] = true;
             if(ch == '1') out.playerSpawns[0] = pos;
             if(ch == '2') out.playerSpawns[1] = pos;
-            if(ch == 'P' || ch == 'R' || ch == 'B') out.enemySpawns.emplace_back(ch, pos);
+            if(ch == 'P' || ch == 'R' || ch == 'B' || ch == 'F') out.enemySpawns.emplace_back(ch, pos);
             if(ch == 'C') out.checkpoints.emplace_back(sf::FloatRect(pos, {Constants::TILE_SIZE, Constants::TILE_SIZE}));
             if(ch == '^'){
                 out.spikes.emplace_back(
@@ -39,8 +39,14 @@ bool LevelLoader::load(const std::string& path,
                 );
             }
             if(ch == 'G'){
+                const float gw = static_cast<float>(goalTexture.getSize().x);
+                const float gh = static_cast<float>(goalTexture.getSize().y);
+                const sf::Vector2f goalPos = {
+                    pos.x + (Constants::TILE_SIZE - gw) * 0.5f,
+                    pos.y + Constants::TILE_SIZE - gh
+                };
                 out.goals.emplace_back(
-                    sf::FloatRect({pos.x, pos.y}, {Constants::TILE_SIZE, Constants::TILE_SIZE}),
+                    sf::FloatRect({goalPos.x, goalPos.y}, {gw, gh}),
                     goalTexture
                 );
             }

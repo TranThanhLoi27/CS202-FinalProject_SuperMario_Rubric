@@ -11,8 +11,10 @@ struct InputState {
     bool attack = false;
     bool dash = false;
     bool dodge = false;
-    bool placeBlock = false;
-    bool throwItem = false;
+    bool useItem = false;
+    bool slotPrev = false;
+    bool slotNext = false;
+    int slotSelect = -1;
 };
 
 class InputManager {

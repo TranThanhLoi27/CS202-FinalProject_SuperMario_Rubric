@@ -1,17 +1,14 @@
 #pragma once
+
 #include "Entities/Enemy.h"
 
-// Flying enemy that moves in a sine wave pattern in the air
 class FlyingEnemy : public Enemy {
-private:
-    float speed;
-    float time;
-
 public:
-    // Constructor setting start position
-    FlyingEnemy(const sf::Vector2f& startPosition);
-    virtual ~FlyingEnemy() = default;
+    explicit FlyingEnemy(sf::Vector2f position);
+    void update(float dt, Level& level) override;
+    void draw(sf::RenderWindow& window, sf::Vector2f camera) const override;
 
-    // Updates vertical sine wave position per frame
-    void update(float dt) override;
+private:
+    float waveTime = 0.0f;
+    sf::Vector2f origin;
 };

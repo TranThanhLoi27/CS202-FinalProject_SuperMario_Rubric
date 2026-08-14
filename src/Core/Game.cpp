@@ -2,7 +2,12 @@
 #include "Core/Game.h"
 
 #include "Core/Camera.h"
+#include "Entities/DroppedItem.h"
+#include "Entities/Inventory.h"
+#include "Entities/Projectile.h"
+#include "Entities/Tombstone.h"
 #include "Graphics/CharacterSprites.h"
+#include "Graphics/EnemySprites.h"
 #include "Utils/Constants.h"
 
 #include <algorithm>
@@ -50,7 +55,12 @@ Game::Game()
     loadTexture();
     MenuScreen::setSelectorTexture(assets.texture("selector"));
     Level::setTextures(assets.texture("solid"), assets.texture("goal"), assets.texture("spike"));
-    HUD::setTextures(assets.texture("heart"), assets.texture("meat"));
+    HUD::setTextures(assets.texture("heart"), assets.texture("meat"), assets.texture("food"),
+                      assets.texture("coin"), assets.texture("solid"));
+    EnemyTextures::setTextures(assets.texture("patrol"), assets.texture("shooter"), assets.texture("flying"),
+                               assets.texture("boss"), assets.texture("boss_projectile"));
+    Projectile::setTexture(assets.texture("boss_projectile"));
+    DroppedItem::setTextures(assets.texture("food"), assets.texture("coin"), assets.texture("solid"));
     registerCharacterSprites();
     Tombstone::setTexture(assets.texture("tombstone"));
 
@@ -63,14 +73,23 @@ Game::Game()
 void Game::loadTexture(){
     assets.LoadTexture("heart", "assets/textures/heart.png");
     assets.LoadTexture("meat", "assets/textures/meat.png");
+    assets.LoadTexture("food", "assets/textures/food.png");
+    assets.LoadTexture("coin", "assets/textures/coin.png");
     if (!assets.LoadTexture("background", "assets/textures/background.png") ||
         !assets.LoadTexture("selector", "assets/textures/selector.png") ||
         !assets.LoadTexture("solid", "assets/textures/solid.png") ||
         !assets.LoadTexture("goal", "assets/textures/goal.png") ||
         !assets.LoadTexture("spike", "assets/textures/spike.png") ||
         !assets.LoadTexture("ori", "assets/textures/ori.png") ||
+        !assets.LoadTexture("patrol", "assets/textures/patrol.png") ||
+        !assets.LoadTexture("shooter", "assets/textures/shooter.png") ||
+        !assets.LoadTexture("boss", "assets/textures/boss.png") ||
+        !assets.LoadTexture("boss_projectile", "assets/textures/boss_projectile.png") ||
         !assets.LoadTexture("tombstone", "assets/textures/tombstone.png")) {
         throw std::runtime_error("Could not load required textures");
+    }
+    if (!assets.LoadTexture("flying", "assets/textures/flying.png")) {
+        assets.LoadTexture("flying", "assets/textures/shooter.png");
     }
 }
 
@@ -81,6 +100,7 @@ void Game::registerCharacterSprites() {
     constexpr int runCount = 3;
     constexpr int jumpFrame = 3;
     constexpr int idleFrame = 4;
+    constexpr int attackFrame = 5;
 
     CharacterSpriteSet ori;
     ori.texture = &assets.texture("ori");
@@ -89,6 +109,7 @@ void Game::registerCharacterSprites() {
     ori.run = Animation(ori.frameRect(runStart), runCount, 0.10f);
     ori.idle = Animation(ori.frameRect(idleFrame), 1, 0.10f);
     ori.jump = Animation(ori.frameRect(jumpFrame), 1, 0.10f);
+    ori.attack = Animation(ori.frameRect(attackFrame), 1, 0.08f);
     ori.runSpeedThreshold = 5.0f;
     CharacterSprites::registerSet("ori", std::move(ori));
 }
@@ -154,11 +175,18 @@ void Game::update(float dt) {
         const float stepDt = std::min(physicsStep, remaining);
         level.update(stepDt, p1, p2);
         updateCamera(stepDt);
-        p1.jump = p1.attack = p1.dodge = p1.placeBlock = p1.throwItem = false;
-        p2.jump = p2.attack = p2.dodge = p2.placeBlock = p2.throwItem = false;
+        p1.jump = p1.attack = p1.dodge = p1.useItem = false;
+        p1.slotPrev = p1.slotNext = false;
+        p1.slotSelect = -1;
+        p2.jump = p2.attack = p2.dodge = p2.useItem = false;
+        p2.slotPrev = p2.slotNext = false;
+        p2.slotSelect = -1;
         remaining -= stepDt;
     }
     if (level.hasWon()) {
+        for (auto& player : level.getPlayers()) {
+            player->getInventory().addToSlot(COIN_SLOT_INDEX, Constants::MATCH_COIN_BONUS);
+        }
         walletCoins += level.collectedCoins();
         unlockedLevelCount = std::max(unlockedLevelCount, std::min(static_cast<int>(LEVELS.size()), selectedLevel + 2));
         state = GameState::Victory;
@@ -356,8 +384,12 @@ void Game::render() {
     background.setPosition({0.0f, 0.0f});
     window.draw(background);
 
-    level.draw(window, camera);
-    hud.draw(window, level);
+    const bool showLevel = state == GameState::Playing || state == GameState::Paused ||
+                           state == GameState::Victory || state == GameState::GameOver;
+    if (showLevel) {
+        level.draw(window, camera);
+        hud.draw(window, level);
+    }
     menu.draw(window, state, menuIndex, selectedProfiles, activeSelectPlayer, playerCount, audio.getMasterVolume(), gameSpeed,
               selectedLevel, unlockedLevelCount, selectedDifficulty, walletCoins, shopIndex, legendUnlocked, profileLevels);
     window.display();

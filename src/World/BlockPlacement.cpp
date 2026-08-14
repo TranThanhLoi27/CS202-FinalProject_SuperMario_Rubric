@@ -3,6 +3,7 @@
 
 #include "Entities/DroppedItem.h"
 #include "Entities/Enemy.h"
+#include "Entities/Inventory.h"
 #include "Entities/Player.h"
 #include "Entities/Tombstone.h"
 #include "Utils/Constants.h"
@@ -46,7 +47,7 @@ bool BlockPlacement::tryPlaceBlock(
     const std::vector<std::unique_ptr<DroppedItem>>& items,
     const std::vector<std::unique_ptr<Tombstone>>& tombstones
 ) {
-    if (player.getInventory().block <= 0 || player.isRespawning()) return false;
+    if (player.getInventory().getSlot(BLOCK_SLOT_INDEX) <= 0 || player.isRespawning()) return false;
 
     const auto b = player.getBounds();
     const int direction = player.getFacingDirection() >= 0 ? 1 : -1;
@@ -66,7 +67,7 @@ bool BlockPlacement::tryPlaceBlock(
         if (overlapsAnyObject(blockRect, players, enemies, items, tombstones)) continue;
 
         if (!map.setSolid(tx, ty)) continue;
-        player.getInventory().remove(ItemType::Block);
+        player.getInventory().removeFromSlot(BLOCK_SLOT_INDEX);
         return true;
     }
 

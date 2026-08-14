@@ -7,17 +7,34 @@ enum class ItemType {
     Block
 };
 
+constexpr int INVENTORY_SLOTS = 6;
+constexpr int FOOD_TYPE_COUNT = 4;
+constexpr int COIN_SLOT_INDEX = 4;
+constexpr int BLOCK_SLOT_INDEX = 5;
+
 class Inventory {
 public:
-    int coin = 0;
-    int food = 0;
-    int heart = 0;
-    int block = 0;
+    int slots[INVENTORY_SLOTS] = {};
+    int selectedSlot = 0;
+    float actionTimer = 0.0f;
 
-    int count(ItemType type) const;
-    int& count(ItemType type);
-    void add(ItemType type, int amount = 1);
+    Inventory();
+
+    int getSlot(int index) const;
+    int& getSlot(int index);
+    void addFood(int variant, int amount = 1);
+    void addToSlot(int slot, int amount);
+    bool removeFromSlot(int slot, int amount = 1);
+    void cycleSlot(int delta);
+    void selectSlot(int index);
+    bool canAct() const;
+    void startAction(float duration);
+    void tick(float dt);
+
+    void add(ItemType type, int amount = 1, int foodVariant = 0);
     bool remove(ItemType type, int amount = 1);
+    int count(ItemType type) const;
+
     bool empty() const;
     Inventory takeAll();
     void merge(const Inventory& other);
