@@ -7,8 +7,12 @@
 
 #include <algorithm>
 
+namespace { const sf::Texture* tombstoneTexture = nullptr; }
+
 Tombstone::Tombstone(sf::Vector2f position, Inventory inventory, int ownerId)
     : Entity(position, {28.0f, 34.0f}), inventory(inventory), ownerId(ownerId) {}
+
+void Tombstone::setTexture(const sf::Texture& texture) { tombstoneTexture = &texture; }
 
 void Tombstone::update(float dt, const TileMap& map) {
     velocity.y = std::min(Constants::MAX_FALL_SPEED, velocity.y + Constants::GRAVITY * dt);
@@ -18,6 +22,14 @@ void Tombstone::update(float dt, const TileMap& map) {
 }
 
 void Tombstone::draw(sf::RenderWindow& window, sf::Vector2f camera) const {
+    if (tombstoneTexture) {
+        sf::Sprite sprite(*tombstoneTexture);
+        const auto dimensions = tombstoneTexture->getSize();
+        sprite.setScale({size.x / static_cast<float>(dimensions.x), size.y / static_cast<float>(dimensions.y)});
+        sprite.setPosition(position - camera);
+        window.draw(sprite);
+        return;
+    }
     sf::RectangleShape stone(size);
     stone.setPosition(position - camera);
     stone.setFillColor({166, 174, 181});

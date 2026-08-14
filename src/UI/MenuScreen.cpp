@@ -2,15 +2,31 @@
 #include "UI/HUD.h"
 
 namespace {
+const sf::Texture* selectorTexture = nullptr;
+constexpr sf::Vector2f kRowSize{540.0f, 46.0f};
+
 void row(sf::RenderWindow& window, const std::string& text, sf::Vector2f pos, bool active, sf::Color color = sf::Color::White) {
-    sf::RectangleShape box({540.0f, 46.0f});
-    box.setPosition(pos);
-    box.setFillColor(active ? sf::Color(226, 180, 94) : sf::Color(34, 43, 48));
-    box.setOutlineThickness(active ? 2.0f : 0.0f);
-    box.setOutlineColor({255, 241, 190});
-    window.draw(box);
+    if (active && selectorTexture) {
+        sf::Sprite selector(*selectorTexture);
+        const sf::Vector2u texSize = selectorTexture->getSize();
+        selector.setPosition(pos);
+        selector.setScale({
+            kRowSize.x / static_cast<float>(texSize.x),
+            kRowSize.y / static_cast<float>(texSize.y)
+        });
+        window.draw(selector);
+    } else {
+        sf::RectangleShape box(kRowSize);
+        box.setPosition(pos);
+        box.setFillColor({34, 43, 48});
+        window.draw(box);
+    }
     HUD::drawText(window, text, pos + sf::Vector2f(18.0f, 8.0f), 23, active ? sf::Color(20, 25, 27) : color);
 }
+}
+
+void MenuScreen::setSelectorTexture(const sf::Texture& texture) {
+    selectorTexture = &texture;
 }
 
 void MenuScreen::draw(sf::RenderWindow& window, GameState state, int menuIndex, const int selectedProfiles[2], int activePlayer,
@@ -48,7 +64,7 @@ void MenuScreen::draw(sf::RenderWindow& window, GameState state, int menuIndex, 
         const auto& profiles = Player::profiles();
         for (int i = 0; i < static_cast<int>(profiles.size()); ++i) {
             const bool locked = i == static_cast<int>(profiles.size()) - 1 && !legendUnlocked;
-            std::string text = profiles[i].name + " — " + profiles[i].skill;
+            std::string text = profiles[i].name + " - " + profiles[i].skill;
             if (locked) text += " [LOCKED]";
             const bool selected = i == selectedProfiles[0] || (playerCount == 2 && i == selectedProfiles[1]);
             row(window, text, {origin.x, 135.0f + 55.0f * i}, selected, locked ? sf::Color(145, 125, 125) : profiles[i].color);
@@ -59,7 +75,7 @@ void MenuScreen::draw(sf::RenderWindow& window, GameState state, int menuIndex, 
         return;
     }
     if (state == GameState::Shop) {
-        HUD::drawText(window, "SHOP — Coins: " + std::to_string(walletCoins), origin, 42, {246, 233, 190});
+        HUD::drawText(window, "SHOP - Coins: " + std::to_string(walletCoins), origin, 42, {246, 233, 190});
         const auto& profiles = Player::profiles();
         for (int i = 0; i < static_cast<int>(profiles.size()); ++i) row(window, profiles[i].name + "  Lv " + std::to_string(profileLevels[i]) + (i == static_cast<int>(profiles.size()) - 1 && !legendUnlocked ? "  Buy Legend: 50" : "  Upgrade: 20"), {origin.x, 130.0f + 55.0f * i}, i == shopIndex);
         row(window, "Back", {origin.x, 130.0f + 55.0f * static_cast<float>(profiles.size())}, shopIndex == static_cast<int>(profiles.size()));

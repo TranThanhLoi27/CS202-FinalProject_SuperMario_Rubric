@@ -15,9 +15,21 @@
 #include <cmath>
 #include <utility>
 
+const sf::Texture* Level::solidTexture = nullptr;
+const sf::Texture* Level::goalTexture = nullptr;
+const sf::Texture* Level::spikeTexture = nullptr;
+
+void Level::setTextures(const sf::Texture& solid, const sf::Texture& goal, const sf::Texture& spike) {
+    solidTexture = &solid;
+    goalTexture = &goal;
+    spikeTexture = &spike;
+}
+
 bool Level::loadFromFile(const std::string& path) {
+    if (!spikeTexture || !goalTexture) return false;
+
     LevelData data;
-    if (!LevelLoader().load(path, data)) return false;
+    if (!LevelLoader().load(path, data, *spikeTexture, *goalTexture)) return false;
 
     map.setTiles(std::move(data.solidTiles));
     spikes = std::move(data.spikes);
@@ -95,7 +107,7 @@ void Level::updateActors(float dt, const InputState& p1, const InputState& p2) {
 
 void Level::draw(sf::RenderWindow& window, sf::Vector2f camera) const {
     drawBackground(window, camera);
-    map.draw(window, camera);
+    map.draw(window, camera, solidTexture);
     drawMarkers(window, camera);
     for (const auto& item : droppedItems) item->draw(window, camera);
     for (const auto& tombstone : tombstones) tombstone->draw(window, camera);
@@ -176,11 +188,9 @@ void Level::constrainPlayerDistance(Player& moving, const Player& anchor) {
     const sf::Vector2f targetPosition = anchorCenter + direction * Constants::MAX_PLAYER_DISTANCE - moving.size * 0.5f;
     const sf::Vector2f correction = targetPosition - moving.position;
     const sf::Vector2f originalVelocity = moving.velocity;
-    const bool wasOnGround = moving.onGround;
 
     moving.velocity = correction;
     Collision::resolveTileCollision(moving, map);
-    moving.onGround = wasOnGround || moving.onGround;
     moving.velocity = originalVelocity;
 
     const float outwardSpeed = moving.velocity.x * direction.x + moving.velocity.y * direction.y;
@@ -200,7 +210,8 @@ void Level::handlePickups() {
             item->kill();
         }
         for (auto& tombstone : tombstones) {
-            if (!tombstone->isAlive() || !MathUtils::intersects(player->getBounds(), tombstone->getBounds())) continue;
+            if (!tombstone->isAlive() || tombstone->getOwnerId() != player->getId() ||
+                !MathUtils::intersects(player->getBounds(), tombstone->getBounds())) continue;
             player->getInventory().merge(tombstone->getInventory());
             for (auto& owner : players) {
                 if (owner->getId() == tombstone->getOwnerId()) owner->markTombstoneRecovered();
@@ -280,18 +291,10 @@ std::vector<std::unique_ptr<Tombstone>>& Level::getTombstones() { return tombsto
 
 void Level::drawMarkers(sf::RenderWindow& window, sf::Vector2f camera) const {
     for (const auto& spike : spikes) {
-        const auto& bounds = spike.getBound();
-        sf::RectangleShape marker(bounds.size);
-        marker.setPosition(bounds.position - camera);
-        marker.setFillColor({196, 77, 77});
-        window.draw(marker);
+        spike.render(window, camera);
     }
     for (const auto& goal : goals) {
-        const auto& bounds = goal.getBound();
-        sf::RectangleShape marker(bounds.size);
-        marker.setPosition(bounds.position - camera);
-        marker.setFillColor({218, 184, 76});
-        window.draw(marker);
+        goal.render(window, camera);
     }
     for (const auto& checkpoint : checkpoints) {
         sf::RectangleShape pole({5.0f, 60.0f});
@@ -310,17 +313,6 @@ void Level::drawMarkers(sf::RenderWindow& window, sf::Vector2f camera) const {
 }
 
 void Level::drawBackground(sf::RenderWindow& window, sf::Vector2f camera) const {
-    sf::RectangleShape sky(window.getView().getSize());
-    sky.setFillColor({28, 46, 55});
-    window.draw(sky);
-    for (int i = 0; i < 26; ++i) {
-        sf::ConvexShape tree(3);
-        const float x = std::fmod(i * 230.0f - camera.x * 0.22f, window.getView().getSize().x + 260.0f) - 140.0f;
-        const float base = window.getView().getSize().y - 120.0f - (i % 5) * 16.0f;
-        tree.setPoint(0, {x, base});
-        tree.setPoint(1, {x + 55.0f, base - 150.0f - (i % 3) * 22.0f});
-        tree.setPoint(2, {x + 110.0f, base});
-        tree.setFillColor({88, 122, 99, 82});
-        window.draw(tree);
-    }
+    (void)window;
+    (void)camera;
 }

@@ -1,19 +1,12 @@
+// Ground enemy that walks back and forth and turns at walls or ledges.
 #pragma once
+
 #include "Entities/Enemy.h"
 
-// Ground enemy that patrols back and forth horizontally
 class PatrolEnemy : public Enemy {
-private:
-    float patrolDistance;
-    float startX;
-    float speed;
-    int direction; // 1 for right, -1 for left
-
 public:
-    // Constructor setting start position and patrol range
-    PatrolEnemy(const sf::Vector2f& startPosition, float distance = 100.0f);
-    virtual ~PatrolEnemy() = default;
-
-    // Updates horizontal movement and reverses direction upon reaching patrol boundaries
-    void update(float dt) override;
+    explicit PatrolEnemy(sf::Vector2f position);
+    void update(float dt, Level& level) override;
+    void draw(sf::RenderWindow& window, sf::Vector2f camera) const override;
 };
+

@@ -2,11 +2,13 @@
 #include "Core/Game.h"
 
 #include "Core/Camera.h"
+#include "Graphics/CharacterSprites.h"
 #include "Utils/Constants.h"
 
 #include <algorithm>
 #include <array>
 #include <optional>
+#include <stdexcept>
 
 namespace {
 struct LevelOption {
@@ -41,10 +43,54 @@ Game::Game()
     : window(sf::VideoMode({Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT}), "2D Co-op Combat Platformer") {
     window.setFramerateLimit(120);
     window.setVerticalSyncEnabled(true);
+    if (!assets.LoadFont("roboto", "assets/fonts/roboto.ttf")) {
+        throw std::runtime_error("Could not load assets/fonts/roboto.ttf");
+    }
+    HUD::setFont(assets.font("roboto"));
+    loadTexture();
+    MenuScreen::setSelectorTexture(assets.texture("selector"));
+    Level::setTextures(assets.texture("solid"), assets.texture("goal"), assets.texture("spike"));
+    HUD::setTextures(assets.texture("heart"), assets.texture("meat"));
+    registerCharacterSprites();
+    Tombstone::setTexture(assets.texture("tombstone"));
+
     profileLevels.assign(Player::profiles().size(), 0);
     level.loadDefault();
     audio.setMasterVolume(70.0f);
     audio.playMusic("assets/audio/background.ogg");
+}
+
+void Game::loadTexture(){
+    assets.LoadTexture("heart", "assets/textures/heart.png");
+    assets.LoadTexture("meat", "assets/textures/meat.png");
+    if (!assets.LoadTexture("background", "assets/textures/background.png") ||
+        !assets.LoadTexture("selector", "assets/textures/selector.png") ||
+        !assets.LoadTexture("solid", "assets/textures/solid.png") ||
+        !assets.LoadTexture("goal", "assets/textures/goal.png") ||
+        !assets.LoadTexture("spike", "assets/textures/spike.png") ||
+        !assets.LoadTexture("ori", "assets/textures/ori.png") ||
+        !assets.LoadTexture("tombstone", "assets/textures/tombstone.png")) {
+        throw std::runtime_error("Could not load required textures");
+    }
+}
+
+void Game::registerCharacterSprites() {
+    constexpr int frameWidth = 420;
+    constexpr int frameHeight = 280;
+    constexpr int runStart = 0;
+    constexpr int runCount = 3;
+    constexpr int jumpFrame = 3;
+    constexpr int idleFrame = 4;
+
+    CharacterSpriteSet ori;
+    ori.texture = &assets.texture("ori");
+    ori.frameWidth = frameWidth;
+    ori.frameHeight = frameHeight;
+    ori.run = Animation(ori.frameRect(runStart), runCount, 0.10f);
+    ori.idle = Animation(ori.frameRect(idleFrame), 1, 0.10f);
+    ori.jump = Animation(ori.frameRect(jumpFrame), 1, 0.10f);
+    ori.runSpeedThreshold = 5.0f;
+    CharacterSprites::registerSet("ori", std::move(ori));
 }
 
 void Game::run() {
@@ -305,6 +351,11 @@ void Game::updateCamera(float dt) {
 
 void Game::render() {
     window.clear({16, 19, 24});
+
+    sf::Sprite background(assets.texture("background"));
+    background.setPosition({0.0f, 0.0f});
+    window.draw(background);
+
     level.draw(window, camera);
     hud.draw(window, level);
     menu.draw(window, state, menuIndex, selectedProfiles, activeSelectPlayer, playerCount, audio.getMasterVolume(), gameSpeed,

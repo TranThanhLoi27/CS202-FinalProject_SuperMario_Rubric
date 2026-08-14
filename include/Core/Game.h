@@ -2,8 +2,10 @@
 #pragma once
 
 #include "Core/AudioManager.h"
+#include "Core/AssetManager.h"
 #include "Core/GameState.h"
 #include "Core/InputManager.h"
+#include "Graphics/Animation.h"
 #include "UI/HUD.h"
 #include "UI/MenuScreen.h"
 #include "World/Level.h"
@@ -18,6 +20,8 @@ public:
     void run();
 
 private:
+    void loadTexture();
+    void registerCharacterSprites();
     void restart();
     void update(float dt);
     void updateMenu();
@@ -33,6 +37,7 @@ private:
     void moveProfileSelection(int player, int delta);
 
     sf::RenderWindow window;
+    AssetManager assets;
     GameState state = GameState::Menu;
     AudioManager audio;
     InputManager input;

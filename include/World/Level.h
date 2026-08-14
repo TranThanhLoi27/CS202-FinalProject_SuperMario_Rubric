@@ -30,6 +30,9 @@ public:
                    int enemyHealthBonus);
     void update(float dt, const InputState& p1, const InputState& p2);
     void draw(sf::RenderWindow& window, sf::Vector2f camera) const;
+    static void setTextures(const sf::Texture& solid,
+                            const sf::Texture& goal,
+                            const sf::Texture& spike);
 
     Player* closestLivingPlayer(const Entity& entity);
     void addProjectile(std::unique_ptr<Projectile> projectile);
@@ -77,4 +80,8 @@ private:
     std::vector<std::unique_ptr<Projectile>> projectiles;
     std::vector<std::unique_ptr<DroppedItem>> droppedItems;
     std::vector<std::unique_ptr<Tombstone>> tombstones;
+
+    static const sf::Texture* solidTexture;
+    static const sf::Texture* goalTexture;
+    static const sf::Texture* spikeTexture;
 };

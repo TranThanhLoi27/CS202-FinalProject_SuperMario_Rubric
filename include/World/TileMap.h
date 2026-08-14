@@ -11,8 +11,10 @@
 class TileMap{
 public:
     void setTiles(std::vector<std::vector<bool>> tiles);
-    void Draw(sf::RenderWindow& window, sf::Vector2f camera) const;
-    void draw(sf::RenderWindow& window, sf::Vector2f camera) const { Draw(window, camera); }
+    void Draw(sf::RenderWindow& window, sf::Vector2f camera, const sf::Texture* tileTexture = nullptr) const;
+    void draw(sf::RenderWindow& window, sf::Vector2f camera, const sf::Texture* tileTexture = nullptr) const {
+        Draw(window, camera, tileTexture);
+    }
     bool IsSolid(const int& x, const int& y) const;
     bool isSolidTile(int x, int y) const { return IsSolid(x, y); }
     bool isSolidAt(sf::Vector2f position) const;

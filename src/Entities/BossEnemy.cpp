@@ -17,7 +17,7 @@ BossEnemy::BossEnemy(sf::Vector2f position)
 }
 
 void BossEnemy::update(float dt, Level& level) {
-    hitTimer = std::max(0.0f, hitTimer - dt);
+    tick(dt);
     if (hitTimer <= 0.0f) velocity.x = static_cast<float>(facingDirection) * 42.0f;
     applyGravity(dt);
 

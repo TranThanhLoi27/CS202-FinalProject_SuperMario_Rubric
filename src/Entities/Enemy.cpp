@@ -1,29 +1,55 @@
+// Implements base enemy damage, loot drop trigger, and common drawing helpers.
 #include "Entities/Enemy.h"
 
-// Constructor setting initial health, size, and bounds
-Enemy::Enemy(const sf::Vector2f& startPosition) {
-    position = startPosition;
-    health = 100.0f;
-    maxHealth = 100.0f;
-    isAlive = true;
-    
-    body.setSize(sf::Vector2f(32.0f, 32.0f));
-    body.setPosition(position);
-    bounds = sf::FloatRect(sf::Vector2f(position.x, position.y), sf::Vector2f(32.0f, 32.0f));
+#include "Entities/Player.h"
+#include "World/Level.h"
+
+Enemy::Enemy(sf::Vector2f position, sf::Vector2f size, int health, sf::Color color)
+    : Character(position, size, health), bodyColor(color) {}
+
+void Enemy::tick(float dt) {
+    hitTimer = std::max(0.0f, hitTimer - dt);
 }
 
-// Subtracts damage from health and sets isAlive to false if health drops to 0
-void Enemy::takeDamage(float amount) {
-    health -= amount;
-    if (health <= 0.0f) {
-        health = 0.0f;
-        isAlive = false;
+void Enemy::takeDamage(int damage, Level& level, const Player& source) {
+    if (hitTimer > 0.0f) return;
+    health -= damage;
+    hitTimer = 0.22f;
+    velocity.x += static_cast<float>(source.getFacingDirection()) * 210.0f;
+    velocity.y = -180.0f;
+    if (health <= 0) {
+        alive = false;
+        level.dropLoot(position + size * 0.5f);
     }
 }
 
-// Renders enemy shape to the window if currently alive
-void Enemy::draw(sf::RenderWindow& window) {
-    if (isAlive) {
-        window.draw(body);
-    }
+void Enemy::addMaxHealth(int amount) {
+    if (amount <= 0) return;
+    maxHealth += amount;
+    health += amount;
 }
+
+int Enemy::getDamage() const {
+    return damage;
+}
+
+void Enemy::drawBody(sf::RenderWindow& window, sf::Vector2f camera) const {
+    sf::RectangleShape body(size);
+    body.setPosition(position - camera);
+    body.setFillColor(bodyColor);
+    window.draw(body);
+}
+
+void Enemy::drawHealthBar(sf::RenderWindow& window, sf::Vector2f camera) const {
+    if (health >= maxHealth) return;
+    sf::RectangleShape back({size.x, 4.0f});
+    back.setPosition(position - camera + sf::Vector2f(0.0f, -8.0f));
+    back.setFillColor({42, 29, 29});
+    window.draw(back);
+
+    sf::RectangleShape hp({size.x * static_cast<float>(health) / static_cast<float>(maxHealth), 4.0f});
+    hp.setPosition(back.getPosition());
+    hp.setFillColor({233, 106, 95});
+    window.draw(hp);
+}
+

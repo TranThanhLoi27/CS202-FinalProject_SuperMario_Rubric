@@ -2,7 +2,10 @@
 #include <Utils/Constants.h>
 #include <fstream>
 
-bool LevelLoader::load(const std::string& path, LevelData& out){
+bool LevelLoader::load(const std::string& path,
+                      LevelData& out,
+                      const sf::Texture& spikeTexture,
+                      const sf::Texture& goalTexture) {
     std::ifstream file(path);
     if(!file)return 0;
     std::vector< std::string> lines;
@@ -11,11 +14,7 @@ bool LevelLoader::load(const std::string& path, LevelData& out){
         if(!line.empty() && line.back() == '\r')line.pop_back();
         if(!line.empty())lines.push_back(line);
     }
-    static sf::Texture spikeTexture;
-    static sf::Texture goalTexture;
-    static const bool texturesLoaded = spikeTexture.loadFromFile("assets/textures/spike.png") &&
-                                       goalTexture.loadFromFile("assets/textures/goal.png");
-    if (!texturesLoaded || lines.empty()) return false;
+    if (lines.empty()) return false;
     int rows = static_cast<int>(lines.size());
     int cols = static_cast<int>(lines[0].size());
     out.solidTiles.assign(rows, std::vector<bool>(cols, false));

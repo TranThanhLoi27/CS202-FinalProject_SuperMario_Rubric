@@ -1,50 +1,47 @@
+// Implements thrown/dropped item physics and procedural drawing.
 #include "Entities/DroppedItem.h"
+
+#include "Utils/Constants.h"
+#include "World/Collision.h"
+#include "World/TileMap.h"
+
+#include <algorithm>
 #include <cmath>
+#include <random>
 
-// Initializes shape size, position, and color based on ItemType
-DroppedItem::DroppedItem(ItemType itemType, const sf::Vector2f& startPosition) 
-    : type(itemType), floatTimer(0.0f)
-{
-    position = startPosition;
-    basePosition = startPosition;
-    velocity = sf::Vector2f(0.0f, 0.0f);
-    bounds = sf::FloatRect(sf::Vector2f(position.x, position.y), sf::Vector2f(16.0f, 16.0f));
-    isAlive = true;
-
-    shape.setSize(sf::Vector2f(16.0f, 16.0f));
-    shape.setPosition(position);
-
-    // Set colors for distinct item recognition: Yellow = Coin, Orange = Food, Red = Heart, Gray = Block
-    switch (type) {
-        case ItemType::COIN:
-            shape.setFillColor(sf::Color::Yellow);
-            break;
-        case ItemType::FOOD:
-            shape.setFillColor(sf::Color(255, 165, 0)); // Orange
-            break;
-        case ItemType::HEART:
-            shape.setFillColor(sf::Color::Red);
-            break;
-        case ItemType::BLOCK:
-            shape.setFillColor(sf::Color(128, 128, 128)); // Gray
-            break;
-    }
+namespace {
+float randomFloat(float low, float high) {
+    static std::mt19937 rng(std::random_device{}());
+    std::uniform_real_distribution<float> dist(low, high);
+    return dist(rng);
+}
 }
 
-// Moves item up and down smoothly using std::sin() for a floating effect
-void DroppedItem::update(float dt) {
-    floatTimer += dt;
-    
-    float offsetY = std::sin(floatTimer * 4.0f) * 5.0f;
-    position.y = basePosition.y + offsetY;
-    
-    bounds.position = position;
-    shape.setPosition(position);
+DroppedItem::DroppedItem(sf::Vector2f position, ItemType type, int quantity)
+    : Entity(position, {20.0f, 20.0f}), type(type), quantity(quantity) {
+    velocity = {randomFloat(-90.0f, 90.0f), -260.0f};
 }
 
-// Draws the item if alive
-void DroppedItem::draw(sf::RenderWindow& window) {
-    if (getIsAlive()) {
-        window.draw(shape);
-    }
+void DroppedItem::update(float dt, const TileMap& map) {
+    age += dt;
+    velocity.x *= 0.985f;
+    velocity.y = std::min(Constants::MAX_FALL_SPEED, velocity.y + Constants::GRAVITY * dt);
+    velocity *= dt;
+    Collision::resolveTileCollision(*this, map);
+    velocity /= dt;
 }
+
+void DroppedItem::draw(sf::RenderWindow& window, sf::Vector2f camera) const {
+    sf::RectangleShape shape(size);
+    sf::Color fill = {241, 200, 76};
+    if (type == ItemType::Food) fill = {114, 200, 106};
+    if (type == ItemType::Heart) fill = {230, 93, 102};
+    if (type == ItemType::Block) fill = {143, 164, 122};
+    shape.setFillColor(fill);
+    shape.setPosition(position - camera + sf::Vector2f(0.0f, std::sin(age * 7.0f) * 2.0f));
+    window.draw(shape);
+}
+
+ItemType DroppedItem::getType() const { return type; }
+int DroppedItem::getQuantity() const { return quantity; }
+

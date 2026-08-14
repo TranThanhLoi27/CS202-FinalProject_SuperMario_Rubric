@@ -14,6 +14,11 @@ file(GLOB_RECURSE SRC_FILES
 list(REMOVE_ITEM SRC_FILES
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Entities/Hitbox.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Entities/LootTable.cpp"
+    # These files belong to the incompatible implementation introduced by the
+    # merge.  The active game uses the Patrol/Shooter/Boss enemy hierarchy.
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/Entities/FlyingEnemy.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/Entities/RangedEnemy.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/Entities/PlacedBlock.cpp"
 )
 
 add_executable(sfml_CS202

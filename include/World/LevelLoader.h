@@ -10,5 +10,8 @@
 
 class LevelLoader{
 public:
-    bool load(const std::string& path, LevelData& out);
+    bool load(const std::string& path,
+              LevelData& out,
+              const sf::Texture& spikeTexture,
+              const sf::Texture& goalTexture);
 };

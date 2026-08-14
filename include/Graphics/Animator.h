@@ -7,6 +7,10 @@ class Animator {
 public:
     void play(const Animation& animation);
     void update(float dt);
+    int getFrame() const { return frame; }
+    const Animation& getAnimation() const { return current; }
+    sf::IntRect getFrameRect() const;
+    bool isPlaying(const Animation& animation) const;
 
 private:
     Animation current;

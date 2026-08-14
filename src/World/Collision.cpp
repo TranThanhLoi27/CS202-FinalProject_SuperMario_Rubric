@@ -8,6 +8,23 @@
 
 #include <cmath>
 
+namespace {
+bool touchesGround(const Entity& entity, const TileMap& map) {
+    constexpr float groundProbe = 2.0f;
+    const float feetY = entity.position.y + entity.size.y;
+    const int minTx = static_cast<int>(std::floor(entity.position.x / Constants::TILE_SIZE));
+    const int maxTx = static_cast<int>(
+        std::floor((entity.position.x + entity.size.x - 1.0f) / Constants::TILE_SIZE)
+    );
+    const int tileBelow = static_cast<int>(std::floor((feetY + groundProbe - 1.0f) / Constants::TILE_SIZE));
+
+    for (int tx = minTx; tx <= maxTx; ++tx) {
+        if (map.isSolidTile(tx, tileBelow)) return true;
+    }
+    return false;
+}
+}
+
 void Collision::resolveTileCollision(Entity& entity, const TileMap& map) {
     entity.onGround = false;
     entity.position.x += entity.velocity.x;
@@ -48,4 +65,5 @@ void Collision::resolveTileCollision(Entity& entity, const TileMap& map) {
     resolveAxis(true);
     entity.position.y += entity.velocity.y;
     resolveAxis(false);
+    entity.onGround = touchesGround(entity, map);
 }
