@@ -211,7 +211,7 @@ void Level::handlePickups() {
             } else if (item->getType() == ItemType::Block) {
                 player->getInventory().addToSlot(BLOCK_SLOT_INDEX, item->getQuantity());
             } else if (item->getType() == ItemType::Heart) {
-                player->heal(item->getQuantity());
+                player->heal(item->getQuantity() * 2);
             }
             item->kill();
         }

@@ -59,8 +59,9 @@ Game::Game()
                       assets.texture("coin"), assets.texture("solid"));
     EnemyTextures::setTextures(assets.texture("patrol"), assets.texture("shooter"), 
                                assets.texture("flyingIdle"), assets.texture("flyingHurt"), assets.texture("flyingDie"),
-                               assets.texture("boss"), assets.texture("boss_projectile"));
-    Projectile::setTexture(assets.texture("boss_projectile"));
+                               assets.texture("bossIdle"), assets.texture("bossWalk"), assets.texture("bossHurt"),
+                               assets.texture("bossDie"), assets.texture("bossAttack"), assets.texture("boss_projectile"));
+    Projectile::setTextures(assets.texture("shooter_projectile"), assets.texture("boss_projectile"));
     DroppedItem::setTextures(assets.texture("food"), assets.texture("coin"), assets.texture("solid"));
     registerCharacterSprites();
     Tombstone::setTexture(assets.texture("tombstone"));
@@ -84,8 +85,13 @@ void Game::loadTexture(){
         !assets.LoadTexture("ori", "assets/textures/ori.png") ||
         (!assets.LoadTexture("patrol", "assets/textures/slime.png") && !assets.LoadTexture("patrol", "assets/textures/patrol.png")) ||
         !assets.LoadTexture("shooter", "assets/textures/shooter.png") ||
-        !assets.LoadTexture("boss", "assets/textures/boss.png") ||
+        !assets.LoadTexture("bossIdle", "assets/textures/boss/Golem_idle.png") ||
+        !assets.LoadTexture("bossWalk", "assets/textures/boss/Golem_walk.png") ||
+        !assets.LoadTexture("bossHurt", "assets/textures/boss/Golem_hurt.png") ||
+        !assets.LoadTexture("bossDie", "assets/textures/boss/Golem_die.png") ||
+        !assets.LoadTexture("bossAttack", "assets/textures/boss/Golem_attack.png") ||
         !assets.LoadTexture("boss_projectile", "assets/textures/boss_projectile.png") ||
+        !assets.LoadTexture("shooter_projectile", "assets/textures/shooter_eneny_projectile.png") ||
         !assets.LoadTexture("tombstone", "assets/textures/tombstone.png")) {
         throw std::runtime_error("Could not load required textures");
     }

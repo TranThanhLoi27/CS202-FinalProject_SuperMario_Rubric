@@ -7,7 +7,7 @@
 #include <cmath>
 
 PatrolEnemy::PatrolEnemy(sf::Vector2f pos)
-    : Enemy(pos + sf::Vector2f(0.0f, -32.0f), {64.0f, 64.0f}, Constants::PATROL_ENEMY_HEALTH, {185, 104, 78}) {}
+    : Enemy(pos, {32.0f, 32.0f}, Constants::PATROL_ENEMY_HEALTH, {185, 104, 78}) {}
 
 void PatrolEnemy::update(float dt, Level& level) {
     tick(dt);
@@ -27,7 +27,7 @@ void PatrolEnemy::update(float dt, Level& level) {
 
     animTime += dt;
     if (hitTimer <= 0.0f) {
-        velocity.x = static_cast<float>(facingDirection) * 65.0f;
+        velocity.x = static_cast<float>(facingDirection) * 35.0f;
     }
     applyGravity(dt);
     velocity *= dt;
@@ -40,8 +40,8 @@ void PatrolEnemy::takeDamage(int damage, Level& level, const Player& source) {
     if (isDying || hitTimer > 0.0f) return;
     health -= damage;
     hitTimer = 0.25f;
-    velocity.x += static_cast<float>(source.getFacingDirection()) * 210.0f;
-    velocity.y = -180.0f;
+    velocity.x += static_cast<float>(source.getFacingDirection()) * 160.0f;
+    velocity.y = -140.0f;
     if (health <= 0) {
         isDying = true;
         deathTimer = 0.35f;
@@ -67,8 +67,8 @@ void PatrolEnemy::draw(sf::RenderWindow& window, sf::Vector2f camera) const {
 
         sprite.setTextureRect(sf::IntRect({frameIndex * 32, 0}, {32, 32}));
         sprite.setOrigin({16.0f, 0.0f});
-        sprite.setScale({facingDirection > 0 ? 2.0f : -2.0f, 2.0f});
-        sprite.setPosition({position.x - camera.x + 32.0f, position.y - camera.y});
+        sprite.setScale({facingDirection > 0 ? 1.0f : -1.0f, 1.0f});
+        sprite.setPosition({position.x - camera.x + 16.0f, position.y - camera.y});
         window.draw(sprite);
     } else {
         drawBody(window, camera);

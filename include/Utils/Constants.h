@@ -22,7 +22,7 @@ constexpr float MAX_FALL_SPEED = 980.0f;
 constexpr float PLAYER_DODGE_DURATION = 0.45f;
 constexpr float PLAYER_DODGE_COOLDOWN = 2.0f;
 
-constexpr int PLAYER_MAX_HEALTH = 5;
+constexpr int PLAYER_MAX_HEALTH = 10;
 constexpr int PLAYER_MAX_HUNGER = 100;
 constexpr float HUNGER_LOSS_PER_SECOND = 1.0f;
 constexpr float HUNGER_DAMAGE_INTERVAL = 1.0f;

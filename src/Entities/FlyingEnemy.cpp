@@ -28,17 +28,30 @@ void FlyingEnemy::update(float dt, Level& level) {
 
     if (hitTimer <= 0.0f) {
         Player* target = level.closestLivingPlayer(*this);
-        if (target) {
-            facingDirection = target->position.x > position.x ? 1 : -1;
+        
+        // Track target only if within a reasonable distance, otherwise patrol origin
+        bool movingToTarget = false;
+        if (target && std::abs(target->position.x - position.x) < 400.0f) {
+            if (target->position.x > position.x && position.x < origin.x + 150.0f) {
+                facingDirection = 1;
+                movingToTarget = true;
+            } else if (target->position.x < position.x && position.x > origin.x - 150.0f) {
+                facingDirection = -1;
+                movingToTarget = true;
+            }
+        }
+        
+        if (!movingToTarget) {
+            if (position.x < origin.x - 128.0f) {
+                facingDirection = 1;
+            } else if (position.x > origin.x + 128.0f) {
+                facingDirection = -1;
+            }
         }
 
         velocity.x = static_cast<float>(facingDirection) * 72.0f;
         position.x += velocity.x * dt;
         position.y = origin.y + std::sin(waveTime * 2.2f) * 42.0f;
-
-        if (position.x < origin.x - 128.0f || position.x > origin.x + 128.0f) {
-            facingDirection *= -1;
-        }
     }
 }
 
@@ -91,8 +104,8 @@ void FlyingEnemy::draw(sf::RenderWindow& window, sf::Vector2f camera) const {
         sprite.setTextureRect(sf::IntRect({frameIndex * 64, 0}, {64, 64}));
         sprite.setOrigin({32.0f, 0.0f});
         
-        // Face the correct direction
-        sprite.setScale({facingDirection > 0 ? 1.0f : -1.0f, 1.0f});
+        // Fix scaling: texture faces left by default.
+        sprite.setScale({facingDirection > 0 ? -1.0f : 1.0f, 1.0f});
         
         sprite.setPosition({position.x - camera.x + 32.0f, position.y - camera.y});
         window.draw(sprite);

@@ -18,9 +18,9 @@ const std::vector<Player::Profile>& Player::profiles() {
         {"ori", "High jump", "Jumps much higher.", "ori", {102, 183, 232}, 1, 1.22f, 1, 1, Constants::PLAYER_MAX_HEALTH, false},
         {"Rush", "Fast move", "Runs faster.", "", {105, 214, 146}, 1.26f, 1, 1, 1, Constants::PLAYER_MAX_HEALTH, false},
         {"Guard", "First hit guard", "Blocks first hit.", "", {238, 210, 96}, 1, 1, 1, 1, Constants::PLAYER_MAX_HEALTH, true},
-        {"Titan", "Tank health", "More health.", "", {227, 164, 85}, .92f, .95f, 1, 1, Constants::PLAYER_MAX_HEALTH + 3, false},
+        {"Titan", "Tank health", "More health.", "", {227, 164, 85}, .92f, .95f, 1, 1, Constants::PLAYER_MAX_HEALTH + 6, false},
         {"Feather", "Slow fall", "Falls slowly.", "", {194, 146, 232}, 1, 1, .72f, .66f, Constants::PLAYER_MAX_HEALTH, false},
-        {"Legend", "All traits", "All traits.", "", {245, 111, 211}, 1.26f, 1.22f, .72f, .66f, Constants::PLAYER_MAX_HEALTH + 3, true}
+        {"Legend", "All traits", "All traits.", "", {245, 111, 211}, 1.26f, 1.22f, .72f, .66f, Constants::PLAYER_MAX_HEALTH + 6, true}
     };
     return p;
 }

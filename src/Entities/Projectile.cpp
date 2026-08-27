@@ -4,16 +4,18 @@
 #include "World/TileMap.h"
 
 namespace {
-const sf::Texture* projectileTex = nullptr;
+const sf::Texture* shooterTexPtr = nullptr;
+const sf::Texture* bossTexPtr = nullptr;
 }
 
-void Projectile::setTexture(const sf::Texture& texture) {
-    projectileTex = &texture;
+void Projectile::setTextures(const sf::Texture& shooterTex, const sf::Texture& bossTex) {
+    shooterTexPtr = &shooterTex;
+    bossTexPtr = &bossTex;
 }
 
-Projectile::Projectile(sf::Vector2f position, sf::Vector2f velocity, bool friendly)
+Projectile::Projectile(sf::Vector2f position, sf::Vector2f velocity, bool friendly, bool isBoss)
     : Entity(position, {static_cast<float>(Constants::ITEM_ICON_SIZE), static_cast<float>(Constants::ITEM_ICON_SIZE)}),
-      friendly(friendly) {
+      friendly(friendly), isBoss(isBoss) {
     this->velocity = velocity;
 }
 
@@ -25,8 +27,9 @@ void Projectile::update(float dt, const TileMap& map) {
 }
 
 void Projectile::draw(sf::RenderWindow& window, sf::Vector2f camera) const {
-    if (projectileTex) {
-        sf::Sprite sprite(*projectileTex);
+    const sf::Texture* tex = isBoss ? bossTexPtr : shooterTexPtr;
+    if (tex) {
+        sf::Sprite sprite(*tex);
         const int frame = static_cast<int>(animTime * 12.0f) % Constants::PROJECTILE_FRAME_COUNT;
         sprite.setTextureRect(sf::IntRect({frame * Constants::ITEM_ICON_SIZE, 0},
                                           {Constants::ITEM_ICON_SIZE, Constants::ITEM_ICON_SIZE}));

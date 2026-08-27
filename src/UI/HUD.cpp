@@ -75,8 +75,11 @@ void HUD::drawHearts(sf::RenderWindow& window, sf::Vector2f position, float heal
     const float scale = renderSize / frameSize;
     heartSprite.setScale({scale, scale});
 
-    for (int i = 0; i < maxHealth; ++i) {
-        float remaining = std::clamp(health - static_cast<float>(i), 0.0f, 1.0f);
+    float displayHealth = health / 2.0f;
+    int displayMaxHealth = (maxHealth + 1) / 2;
+
+    for (int i = 0; i < displayMaxHealth; ++i) {
+        float remaining = std::clamp(displayHealth - static_cast<float>(i), 0.0f, 1.0f);
         int col = 4;
         if (remaining >= 0.875f) col = 0;
         else if (remaining >= 0.625f) col = 1;
