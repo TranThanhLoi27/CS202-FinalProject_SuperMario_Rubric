@@ -81,7 +81,7 @@ void Game::loadTexture(){
         !assets.LoadTexture("goal", "assets/textures/goal.png") ||
         !assets.LoadTexture("spike", "assets/textures/spike.png") ||
         !assets.LoadTexture("ori", "assets/textures/ori.png") ||
-        !assets.LoadTexture("patrol", "assets/textures/patrol.png") ||
+        (!assets.LoadTexture("patrol", "assets/textures/slime.png") && !assets.LoadTexture("patrol", "assets/textures/patrol.png")) ||
         !assets.LoadTexture("shooter", "assets/textures/shooter.png") ||
         !assets.LoadTexture("boss", "assets/textures/boss.png") ||
         !assets.LoadTexture("boss_projectile", "assets/textures/boss_projectile.png") ||

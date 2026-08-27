@@ -13,9 +13,9 @@ public:
     virtual ~Enemy() = default;
     virtual void update(float dt, Level& level) = 0;
     using Character::takeDamage;
-    void takeDamage(int damage, Level& level, const Player& source);
+    virtual void takeDamage(int damage, Level& level, const Player& source);
     void addMaxHealth(int amount);
-    int getDamage() const;
+    virtual int getDamage() const;
 
 protected:
     void tick(float dt);

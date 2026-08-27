@@ -11,12 +11,6 @@ file(GLOB_RECURSE SRC_FILES
     CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
 )
-list(REMOVE_ITEM SRC_FILES
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/Entities/Hitbox.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/Entities/LootTable.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/Entities/RangedEnemy.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/Entities/PlacedBlock.cpp"
-)
 
 add_executable(sfml_CS202
     ${SRC_FILES}
