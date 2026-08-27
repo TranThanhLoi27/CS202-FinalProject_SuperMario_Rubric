@@ -57,7 +57,8 @@ Game::Game()
     Level::setTextures(assets.texture("solid"), assets.texture("goal"), assets.texture("spike"));
     HUD::setTextures(assets.texture("heart"), assets.texture("meat"), assets.texture("food"),
                       assets.texture("coin"), assets.texture("solid"));
-    EnemyTextures::setTextures(assets.texture("patrol"), assets.texture("shooter"), assets.texture("flying"),
+    EnemyTextures::setTextures(assets.texture("patrol"), assets.texture("shooter"), 
+                               assets.texture("flyingIdle"), assets.texture("flyingHurt"), assets.texture("flyingDie"),
                                assets.texture("boss"), assets.texture("boss_projectile"));
     Projectile::setTexture(assets.texture("boss_projectile"));
     DroppedItem::setTextures(assets.texture("food"), assets.texture("coin"), assets.texture("solid"));
@@ -88,8 +89,10 @@ void Game::loadTexture(){
         !assets.LoadTexture("tombstone", "assets/textures/tombstone.png")) {
         throw std::runtime_error("Could not load required textures");
     }
-    if (!assets.LoadTexture("flying", "assets/textures/flying.png")) {
-        assets.LoadTexture("flying", "assets/textures/shooter.png");
+    if (!assets.LoadTexture("flyingIdle", "assets/textures/bat/Bat-IdleFly.png") ||
+        !assets.LoadTexture("flyingHurt", "assets/textures/bat/Bat-Hurt.png") ||
+        !assets.LoadTexture("flyingDie", "assets/textures/bat/Bat-Die.png")) {
+        throw std::runtime_error("Could not load bat textures for flying enemy");
     }
 }
 
