@@ -2,6 +2,7 @@
 #pragma once
 
 #include "Entities/Enemy.h"
+#include "Graphics/Animator.h"
 
 class BossEnemy : public Enemy {
 public:
@@ -13,9 +14,10 @@ public:
 
 private:
     float shootCooldown = 1.0f;
-    float animTime = 0.0f;
+    Animator animator;
     float deathTimer = 0.0f;
     bool isDying = false;
     bool isAttacking = false;
     bool hasFired = false;
 };
+

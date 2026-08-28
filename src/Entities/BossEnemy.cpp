@@ -15,22 +15,25 @@
 BossEnemy::BossEnemy(sf::Vector2f position)
     : Enemy(position, {180.0f, 128.0f}, Constants::BOSS_HEALTH, {142, 65, 77}) {
     facingDirection = -1;
+    animator.play(EnemyTextures::bossIdleAnim);
 }
 
 void BossEnemy::update(float dt, Level& level) {
     tick(dt);
     
     if (isDying) {
+        animator.play(EnemyTextures::bossDieAnim);
+        animator.update(dt);
         deathTimer -= dt;
         if (deathTimer <= 0.0f) {
             alive = false;
         }
-        animTime += dt;
         return;
     }
 
     if (hitTimer > 0.0f) {
-        animTime += dt;
+        animator.play(EnemyTextures::bossHurtAnim);
+        animator.update(dt);
         applyGravity(dt);
         const float beforeX = position.x;
         velocity *= dt;
@@ -40,7 +43,8 @@ void BossEnemy::update(float dt, Level& level) {
     }
 
     if (isAttacking) {
-        animTime += dt;
+        animator.play(EnemyTextures::bossAttackAnim);
+        animator.update(dt);
         applyGravity(dt);
         const float beforeX = position.x;
         velocity.x = 0; // stop moving
@@ -48,7 +52,7 @@ void BossEnemy::update(float dt, Level& level) {
         Collision::resolveTileCollision(*this, level.getTileMap());
         velocity /= dt;
 
-        int frameIndex = static_cast<int>(animTime * 12.0f);
+        int frameIndex = animator.getFrame();
         if (frameIndex == 7 && !hasFired) {
             hasFired = true;
             level.addProjectile(std::make_unique<Projectile>(
@@ -63,16 +67,21 @@ void BossEnemy::update(float dt, Level& level) {
             ));
         }
 
-        if (frameIndex >= 11) {
+        if (frameIndex >= 10) {
             isAttacking = false;
             shootCooldown = 1.35f;
-            animTime = 0.0f;
         }
         return;
     }
 
-    animTime += dt;
     velocity.x = static_cast<float>(facingDirection) * 42.0f;
+    if (std::abs(velocity.x) > 0.1f) {
+        animator.play(EnemyTextures::bossWalkAnim);
+    } else {
+        animator.play(EnemyTextures::bossIdleAnim);
+    }
+    animator.update(dt);
+
     applyGravity(dt);
 
     const float beforeX = position.x;
@@ -93,7 +102,7 @@ void BossEnemy::update(float dt, Level& level) {
         if (shootCooldown <= 0.0f) {
             isAttacking = true;
             hasFired = false;
-            animTime = 0.0f;
+            animator.play(EnemyTextures::bossAttackAnim);
         }
     } else {
         shootCooldown = std::max(0.0f, shootCooldown - dt);
@@ -104,11 +113,11 @@ void BossEnemy::takeDamage(int damage, Level& level, const Player& source) {
     if (isDying || hitTimer > 0.0f) return;
     health -= damage;
     hitTimer = 0.3f;
-    animTime = 0.0f; // Reset anim time for hurt animation
+    animator.play(EnemyTextures::bossHurtAnim);
     if (health <= 0) {
         isDying = true;
         deathTimer = 1.0f; // 13 frames at ~13 fps
-        animTime = 0.0f; // Reset anim time for death animation
+        animator.play(EnemyTextures::bossDieAnim);
         level.dropLoot(position + size * 0.5f);
         // extra loot for boss
         level.dropLoot(position + size * 0.5f + sf::Vector2f(30, -30));
@@ -122,43 +131,24 @@ int BossEnemy::getDamage() const {
 
 void BossEnemy::draw(sf::RenderWindow& window, sf::Vector2f camera) const {
     const sf::Texture* currentTexture = nullptr;
-    int frameCount = 1;
-    float fps = 12.0f; // Default fps
 
     if (isDying) {
         currentTexture = EnemyTextures::bossDie;
-        frameCount = 13; // Die is 13 frames
-        fps = 13.0f;
     } else if (hitTimer > 0.0f) {
         currentTexture = EnemyTextures::bossHurt;
-        frameCount = 4;
-        fps = 13.0f;
     } else if (isAttacking) {
         currentTexture = EnemyTextures::bossAttack;
-        frameCount = 11;
-        fps = 12.0f;
     } else {
-        // Walk or Idle
         if (std::abs(velocity.x) > 0.1f) {
             currentTexture = EnemyTextures::bossWalk;
-            frameCount = 10;
         } else {
             currentTexture = EnemyTextures::bossIdle;
-            frameCount = 8;
         }
     }
 
     if (currentTexture) {
         sf::Sprite sprite(*currentTexture);
-        
-        int frameIndex = static_cast<int>(animTime * fps);
-        if ((isDying || isAttacking) && frameIndex >= frameCount) {
-            frameIndex = frameCount - 1;
-        } else {
-            frameIndex %= frameCount;
-        }
-
-        sprite.setTextureRect(sf::IntRect({frameIndex * 90, 0}, {90, 64}));
+        sprite.setTextureRect(animator.getFrameRect());
         sprite.setOrigin({45.0f, 0.0f});
         
         sprite.setScale({facingDirection > 0 ? 2.0f : -2.0f, 2.0f}); 
