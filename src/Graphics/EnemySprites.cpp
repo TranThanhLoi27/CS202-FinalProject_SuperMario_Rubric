@@ -14,6 +14,19 @@ const sf::Texture* EnemyTextures::bossDie = nullptr;
 const sf::Texture* EnemyTextures::bossAttack = nullptr;
 const sf::Texture* EnemyTextures::projectile = nullptr;
 
+Animation EnemyTextures::patrolWalkAnim(sf::IntRect({0, 0}, {32, 32}), 2, 0.15f);
+Animation EnemyTextures::patrolDieAnim(sf::IntRect({64, 0}, {32, 32}), 2, 0.15f);
+
+Animation EnemyTextures::flyingRunAnim(sf::IntRect({0, 0}, {64, 64}), 8, 0.10f);
+Animation EnemyTextures::flyingHurtAnim(sf::IntRect({0, 0}, {64, 64}), 5, 0.05f);
+Animation EnemyTextures::flyingDieAnim(sf::IntRect({0, 0}, {64, 64}), 12, 0.08f);
+
+Animation EnemyTextures::bossWalkAnim(sf::IntRect({0, 0}, {90, 64}), 10, 0.10f);
+Animation EnemyTextures::bossIdleAnim(sf::IntRect({0, 0}, {90, 64}), 8, 0.10f);
+Animation EnemyTextures::bossAttackAnim(sf::IntRect({0, 0}, {90, 64}), 11, 0.08f);
+Animation EnemyTextures::bossHurtAnim(sf::IntRect({0, 0}, {90, 64}), 4, 0.08f);
+Animation EnemyTextures::bossDieAnim(sf::IntRect({0, 0}, {90, 64}), 13, 0.08f);
+
 void EnemyTextures::setTextures(const sf::Texture& patrolTex,
                                 const sf::Texture& shooterIdleTex,
                                 const sf::Texture& shooterAttackTex,
@@ -41,3 +54,4 @@ void EnemyTextures::setTextures(const sf::Texture& patrolTex,
     bossAttack = &bossAttackTex;
     projectile = &projectileTex;
 }
+

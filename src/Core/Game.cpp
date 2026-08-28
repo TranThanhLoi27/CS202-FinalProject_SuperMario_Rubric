@@ -79,6 +79,7 @@ void Game::loadTexture(){
     assets.LoadTexture("meat", "assets/textures/meat.png");
     assets.LoadTexture("food", "assets/textures/food.png");
     assets.LoadTexture("coin", "assets/textures/coin.png");
+    assets.LoadTexture("rush", "assets/textures/rush.png");
     if (!assets.LoadTexture("background", "assets/textures/background.png") ||
         !assets.LoadTexture("selector", "assets/textures/selector.png") ||
         !assets.LoadTexture("solid", "assets/textures/solid.png") ||
@@ -99,7 +100,8 @@ void Game::loadTexture(){
         !assets.LoadTexture("tombstone", "assets/textures/tombstone.png")) {
         throw std::runtime_error("Could not load required textures");
     }
-    if (!assets.LoadTexture("flyingIdle", "assets/textures/bat/Bat-IdleFly.png") ||
+    if ((!assets.LoadTexture("flyingIdle", "assets/textures/bat/Bat-Run.png") &&
+         !assets.LoadTexture("flyingIdle", "assets/textures/bat/Bat-IdleFly.png")) ||
         !assets.LoadTexture("flyingHurt", "assets/textures/bat/Bat-Hurt.png") ||
         !assets.LoadTexture("flyingDie", "assets/textures/bat/Bat-Die.png")) {
         throw std::runtime_error("Could not load bat textures for flying enemy");
@@ -125,6 +127,17 @@ void Game::registerCharacterSprites() {
     ori.attack = Animation(ori.frameRect(attackFrame), 1, 0.08f);
     ori.runSpeedThreshold = 5.0f;
     CharacterSprites::registerSet("ori", std::move(ori));
+
+    CharacterSpriteSet rush;
+    rush.texture = &assets.texture("rush");
+    rush.frameWidth = frameWidth;
+    rush.frameHeight = frameHeight;
+    rush.run = Animation(rush.frameRect(runStart), runCount, 0.10f);
+    rush.idle = Animation(rush.frameRect(idleFrame), 1, 0.10f);
+    rush.jump = Animation(rush.frameRect(jumpFrame), 1, 0.10f);
+    rush.attack = Animation(rush.frameRect(attackFrame), 1, 0.08f);
+    rush.runSpeedThreshold = 5.0f;
+    CharacterSprites::registerSet("rush", std::move(rush));
 }
 
 void Game::run() {

@@ -17,17 +17,17 @@ float approach(float value, float target, float step) {
 const std::vector<Player::Profile>& Player::profiles() {
     static const std::vector<Profile> p = {
         {"ori", "High jump", "Jumps much higher.", "ori", {102, 183, 232}, 1, 1.22f, 1, 1, Constants::PLAYER_MAX_HEALTH, false},
-        {"Rush", "Fast move", "Runs faster.", "", {105, 214, 146}, 1.26f, 1, 1, 1, Constants::PLAYER_MAX_HEALTH, false},
-        {"Guard", "First hit guard", "Blocks first hit.", "", {238, 210, 96}, 1, 1, 1, 1, Constants::PLAYER_MAX_HEALTH, true},
-        {"Titan", "Tank health", "More health.", "", {227, 164, 85}, .92f, .95f, 1, 1, Constants::PLAYER_MAX_HEALTH + 6, false},
-        {"Feather", "Slow fall", "Falls slowly.", "", {194, 146, 232}, 1, 1, .72f, .66f, Constants::PLAYER_MAX_HEALTH, false},
-        {"Legend", "All traits", "All traits.", "", {245, 111, 211}, 1.26f, 1.22f, .72f, .66f, Constants::PLAYER_MAX_HEALTH + 6, true}
+        {"Rush", "Fast move", "Runs faster.", "rush", {105, 214, 146}, 1.26f, 1, 1, 1, Constants::PLAYER_MAX_HEALTH, false},
+        {"Guard", "First hit guard", "Blocks first hit.", "rush", {238, 210, 96}, 1, 1, 1, 1, Constants::PLAYER_MAX_HEALTH, true},
+        {"Titan", "Tank health", "More health.", "rush", {227, 164, 85}, .92f, .95f, 1, 1, Constants::PLAYER_MAX_HEALTH + 6, false},
+        {"Feather", "Slow fall", "Falls slowly.", "rush", {194, 146, 232}, 1, 1, .72f, .66f, Constants::PLAYER_MAX_HEALTH, false},
+        {"Legend", "All traits", "All traits.", "rush", {245, 111, 211}, 1.26f, 1.22f, .72f, .66f, Constants::PLAYER_MAX_HEALTH + 6, true}
     };
     return p;
 }
 
 Player::Player(int id, sf::Vector2f pos, Profile p)
-    : Character(pos, {26, 42}, p.maxHealth),
+    : Character(pos, {39.0f, 63.0f}, p.maxHealth),
       color(p.color),
       lastSafePosition(pos),
       id(id),
@@ -160,7 +160,8 @@ void Player::drawSprite(sf::RenderWindow& window, sf::Vector2f camera) const {
     if (!sprites || !sprites->texture) return;
 
     sf::Sprite sprite(*sprites->texture);
-    const float scale = size.y / static_cast<float>(sprites->frameHeight);
+    const float scaleX = size.x / static_cast<float>(sprites->frameWidth);
+    const float scaleY = size.y / static_cast<float>(sprites->frameHeight);
 
     sprite.setTextureRect(animator.getFrameRect());
     sprite.setOrigin({
@@ -168,8 +169,8 @@ void Player::drawSprite(sf::RenderWindow& window, sf::Vector2f camera) const {
         static_cast<float>(sprites->frameHeight)
     });
     sprite.setScale({
-        facingDirection > 0 ? scale : -scale,
-        scale
+        facingDirection > 0 ? scaleX : -scaleX,
+        scaleY
     });
     sprite.setPosition({
         position.x - camera.x + size.x * 0.5f,
@@ -225,7 +226,7 @@ void Player::die(Level& l, bool fell) { if (isRespawning()) return; auto stored 
 bool Player::isRespawning() const { return respawnTimer > 0; }
 bool Player::isDodging() const { return dodgeTimer > 0 && !isRespawning(); }
 bool Player::hasCollectedOwnTombstone() const { return recoveredTombstone; }
-sf::FloatRect Player::attackBox() const { return {{facingDirection > 0 ? position.x + size.x - 2 : position.x - 34, position.y + 8}, {36, 28}}; }
+sf::FloatRect Player::attackBox() const { return {{facingDirection > 0 ? position.x + size.x - 3.0f : position.x - 51.0f, position.y + 12.0f}, {54.0f, 42.0f}}; }
 bool Player::isAttacking() const { return attackTimer > 0 && !isRespawning(); }
 int Player::getId() const { return id; }
 int Player::getFacingDirection() const { return facingDirection; }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Entities/Enemy.h"
+#include "Graphics/Animator.h"
 
 class FlyingEnemy : public Enemy {
 public:
@@ -13,7 +14,8 @@ public:
 private:
     float waveTime = 0.0f;
     sf::Vector2f origin;
-    float animTime = 0.0f;
+    Animator animator;
     float deathTimer = 0.0f;
     bool isDying = false;
 };
+
