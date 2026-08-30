@@ -26,6 +26,7 @@ private:
     void update(float dt);
     void updateMenu();
     void updatePaused();
+    void updateControls(float dt);
     void updateMapSelect();
     void updateDifficultySelect();
     void updateCharacterSelect();
@@ -57,4 +58,10 @@ private:
     bool legendUnlocked = false;
     std::vector<int> profileLevels;
     float gameSpeed = 1.0f;
+    int pauseMenuIndex = 0;
+    int controlsPlayerIndex = 0;
+    int controlsActionIndex = 0;
+    bool rebinding = false;
+    std::string rebindWarning;
+    float rebindWarningTimer = 0.0f;
 };

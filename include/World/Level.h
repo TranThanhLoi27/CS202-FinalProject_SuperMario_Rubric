@@ -5,6 +5,7 @@
 #include "Entities/Player.h"
 #include "Entities/Projectile.h"
 #include "Entities/Tombstone.h"
+#include "Entities/FairyCompanion.h"
 #include "World/Checkpoint.h"
 #include "World/GoalGate.h"
 #include "World/SpikeTrap.h"
@@ -32,7 +33,8 @@ public:
     void draw(sf::RenderWindow& window, sf::Vector2f camera) const;
     static void setTextures(const sf::Texture& solid,
                             const sf::Texture& goal,
-                            const sf::Texture& spike);
+                            const sf::Texture& spike,
+                            const sf::Texture& fairy);
 
     Player* closestLivingPlayer(const Entity& entity);
     void addProjectile(std::unique_ptr<Projectile> projectile);
@@ -79,6 +81,7 @@ private:
     std::vector<std::unique_ptr<Projectile>> projectiles;
     std::vector<std::unique_ptr<DroppedItem>> droppedItems;
     std::vector<std::unique_ptr<Tombstone>> tombstones;
+    FairyCompanionManager fairies;
 
     static const sf::Texture* solidTexture;
     static const sf::Texture* goalTexture;

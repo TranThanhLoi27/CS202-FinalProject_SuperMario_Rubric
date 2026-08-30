@@ -20,10 +20,11 @@ const sf::Texture* Level::solidTexture = nullptr;
 const sf::Texture* Level::goalTexture = nullptr;
 const sf::Texture* Level::spikeTexture = nullptr;
 
-void Level::setTextures(const sf::Texture& solid, const sf::Texture& goal, const sf::Texture& spike) {
+void Level::setTextures(const sf::Texture& solid, const sf::Texture& goal, const sf::Texture& spike, const sf::Texture& fairy) {
     solidTexture = &solid;
     goalTexture = &goal;
     spikeTexture = &spike;
+    FairyCompanionManager::setTexture(fairy);
 }
 
 bool Level::loadFromFile(const std::string& path) {
@@ -78,6 +79,7 @@ void Level::spawnFromMap() {
         if (spawn.first == 'B') enemies.push_back(std::make_unique<BossEnemy>(spawn.second + sf::Vector2f(0.0f, -46.0f)));
         if (!enemies.empty()) enemies.back()->addMaxHealth(pendingEnemyHealthBonus);
     }
+    fairies.initForPlayers(players.size());
 }
 
 void Level::update(float dt, const InputState& p1, const InputState& p2) {
@@ -105,6 +107,7 @@ void Level::updateActors(float dt, const InputState& p1, const InputState& p2) {
     for (auto& projectile : projectiles) projectile->update(dt, map);
     for (auto& item : droppedItems) item->update(dt, map);
     for (auto& tombstone : tombstones) tombstone->update(dt, map);
+    fairies.update(dt, players);
 }
 
 void Level::draw(sf::RenderWindow& window, sf::Vector2f camera) const {
@@ -116,6 +119,7 @@ void Level::draw(sf::RenderWindow& window, sf::Vector2f camera) const {
     for (const auto& enemy : enemies) enemy->draw(window, camera);
     for (const auto& projectile : projectiles) projectile->draw(window, camera);
     for (const auto& player : players) player->draw(window, camera);
+    fairies.draw(window, camera);
 }
 
 Player* Level::closestLivingPlayer(const Entity& entity) {

@@ -8,6 +8,7 @@
 #include "Entities/Tombstone.h"
 #include "Graphics/CharacterSprites.h"
 #include "Graphics/EnemySprites.h"
+#include "UI/MenuScreen.h"
 #include "Utils/Constants.h"
 
 #include <algorithm>
@@ -53,8 +54,8 @@ Game::Game()
     }
     HUD::setFont(assets.font("roboto"));
     loadTexture();
-    MenuScreen::setSelectorTexture(assets.texture("selector"));
-    Level::setTextures(assets.texture("solid"), assets.texture("goal"), assets.texture("spike"));
+    MenuScreen::setSelectorTextures(assets.texture("selector1"), assets.texture("selector2"));
+    Level::setTextures(assets.texture("solid"), assets.texture("goal"), assets.texture("spike"), assets.texture("fairy"));
     HUD::setTextures(assets.texture("heart"), assets.texture("meat"), assets.texture("food"),
                       assets.texture("coin"), assets.texture("solid"));
     EnemyTextures::setTextures(assets.texture("patrol"), assets.texture("shooter"), 
@@ -79,7 +80,9 @@ void Game::loadTexture(){
     assets.LoadTexture("coin", "assets/textures/coin.png");
     assets.LoadTexture("rush", "assets/textures/rush.png");
     if (!assets.LoadTexture("background", "assets/textures/background.png") ||
-        !assets.LoadTexture("selector", "assets/textures/selector.png") ||
+        !assets.LoadTexture("selector2", "assets/textures/selector1.png") ||
+        !assets.LoadTexture("selector1", "assets/textures/selector2.png") ||
+        !assets.LoadTexture("fairy", "assets/textures/fairy.png") ||
         !assets.LoadTexture("solid", "assets/textures/solid.png") ||
         !assets.LoadTexture("goal", "assets/textures/goal.png") ||
         !assets.LoadTexture("spike", "assets/textures/spike.png") ||
@@ -142,6 +145,9 @@ void Game::run() {
     while (window.isOpen()) {
         while (const std::optional event = window.pollEvent()) {
             if (event->is<sf::Event::Closed>()) window.close();
+            if (const auto* mouseWheel = event->getIf<sf::Event::MouseWheelScrolled>()) {
+                input.setMouseWheelDelta(mouseWheel->delta);
+            }
         }
 
         input.update();
@@ -171,20 +177,30 @@ void Game::update(float dt) {
         updateMenu();
         return;
     }
-    if (input.pressed(sf::Keyboard::Key::Enter) &&
+    const InputState& p1Input = input.getPlayer1Input();
+    if (p1Input.menuConfirm &&
         (state == GameState::Victory || state == GameState::GameOver)) {
         restart();
     }
-    if (input.pressed(sf::Keyboard::Key::Escape) &&
+    if (p1Input.menuBack &&
         (state == GameState::Victory || state == GameState::GameOver)) {
         state = GameState::Menu;
     }
-    if (input.pressed(sf::Keyboard::Key::P) &&
+    if (p1Input.menuBack && state == GameState::Playing) {
+        state = GameState::Paused;
+        pauseMenuIndex = 0;
+    }
+    if (p1Input.pause &&
         (state == GameState::Playing || state == GameState::Paused)) {
         state = state == GameState::Playing ? GameState::Paused : GameState::Playing;
+        if (state == GameState::Paused) pauseMenuIndex = 0;
     }
     if (state == GameState::Paused) {
         updatePaused();
+        return;
+    }
+    if (state == GameState::Controls) {
+        updateControls(dt);
         return;
     }
     if (state != GameState::Playing) return;
@@ -217,8 +233,35 @@ void Game::update(float dt) {
 }
 
 void Game::updateMenu() {
+    const InputState& p1Input = input.getPlayer1Input();
+
+    // Handle mouse wheel viewport scrolling
+    if (input.getMouseWheelDelta() != 0.0f) {
+        const int delta = input.getMouseWheelDelta() > 0 ? -1 : 1;
+        const int maxVisible = MenuScreen::getMaxVisibleItems(state);
+        const int totalItems = MenuScreen::getTotalItems(state, legendUnlocked, profileLevels);
+        int newOffset = MenuScreen::getViewportOffset() + delta;
+        newOffset = std::max(0, std::min(newOffset, totalItems - maxVisible));
+        MenuScreen::setViewportOffset(newOffset);
+        input.resetMouseWheelDelta();
+    }
+
+    // Handle real-time hover selection
+    const int itemUnderMouse = MenuScreen::getMenuItemUnderMouse(state, input.getMousePosition(), menuIndex,
+                                                                 selectedLevel, unlockedLevelCount, selectedDifficulty,
+                                                                 walletCoins, shopIndex, legendUnlocked, profileLevels,
+                                                                 pauseMenuIndex, controlsPlayerIndex, controlsActionIndex);
+    if (itemUnderMouse >= 0) {
+        menuIndex = itemUnderMouse;
+    }
+
+    // Handle mouse click for menu selection
+    if (input.mousePressed(sf::Mouse::Button::Left) && itemUnderMouse >= 0) {
+        // Mouse click is handled after selection is updated
+    }
+
     if (state == GameState::Info) {
-        if (input.pressed(sf::Keyboard::Key::Enter) || input.pressed(sf::Keyboard::Key::Escape)) {
+        if (p1Input.menuConfirm || p1Input.menuBack) {
             state = GameState::Menu;
         }
         return;
@@ -244,95 +287,434 @@ void Game::updateMenu() {
         return;
     }
 
-    if (input.pressed(sf::Keyboard::Key::Up)) menuIndex = (menuIndex + 5) % 6;
-    if (input.pressed(sf::Keyboard::Key::Down)) menuIndex = (menuIndex + 1) % 6;
-    if (input.pressed(sf::Keyboard::Key::I)) {
+    if (p1Input.menuUp) {
+        menuIndex = (menuIndex + 5) % 6;
+        // Auto-scroll viewport for scrollable menus
+        const int maxVisible = MenuScreen::getMaxVisibleItems(state);
+        if (menuIndex < MenuScreen::getViewportOffset()) {
+            MenuScreen::setViewportOffset(menuIndex);
+        } else if (menuIndex >= MenuScreen::getViewportOffset() + maxVisible) {
+            MenuScreen::setViewportOffset(menuIndex - maxVisible + 1);
+        }
+    }
+    if (p1Input.menuDown) {
+        menuIndex = (menuIndex + 1) % 6;
+        // Auto-scroll viewport for scrollable menus
+        const int maxVisible = MenuScreen::getMaxVisibleItems(state);
+        if (menuIndex < MenuScreen::getViewportOffset()) {
+            MenuScreen::setViewportOffset(menuIndex);
+        } else if (menuIndex >= MenuScreen::getViewportOffset() + maxVisible) {
+            MenuScreen::setViewportOffset(menuIndex - maxVisible + 1);
+        }
+    }
+    if (p1Input.info) {
         state = GameState::Info;
         return;
     }
-    if (!input.pressed(sf::Keyboard::Key::Enter)) return;
+    if (!p1Input.menuConfirm && !input.mousePressed(sf::Mouse::Button::Left)) return;
 
     if (menuIndex == 0 || menuIndex == 1) {
         playerCount = menuIndex + 1;
         activeSelectPlayer = 0;
         state = GameState::LevelSelect;
+        MenuScreen::setViewportOffset(0); // Reset viewport when switching menus
     }
-    if (menuIndex == 2) state = GameState::DifficultySelect;
-    if (menuIndex == 3) state = GameState::Shop;
-    if (menuIndex == 4) state = GameState::Info;
+    if (menuIndex == 2) {
+        state = GameState::DifficultySelect;
+        MenuScreen::setViewportOffset(0); // Reset viewport when switching menus
+    }
+    if (menuIndex == 3) {
+        state = GameState::Shop;
+        MenuScreen::setViewportOffset(0); // Reset viewport when switching menus
+    }
+    if (menuIndex == 4) {
+        state = GameState::Info;
+        MenuScreen::setViewportOffset(0); // Reset viewport when switching menus
+    }
     if (menuIndex == 5) window.close();
 }
 
 void Game::updatePaused() {
-    if (input.pressed(sf::Keyboard::Key::Escape)) {
-        state = GameState::Menu;
+    constexpr int pauseItemCount = 3;
+    const InputState& p1Input = input.getPlayer1Input();
+
+    // Handle mouse wheel viewport scrolling
+    if (input.getMouseWheelDelta() != 0.0f) {
+        const int delta = input.getMouseWheelDelta() > 0 ? -1 : 1;
+        const int maxVisible = MenuScreen::getMaxVisibleItems(state);
+        const int totalItems = MenuScreen::getTotalItems(state, legendUnlocked, profileLevels);
+        int newOffset = MenuScreen::getViewportOffset() + delta;
+        newOffset = std::max(0, std::min(newOffset, totalItems - maxVisible));
+        MenuScreen::setViewportOffset(newOffset);
+        input.resetMouseWheelDelta();
+    }
+
+    // Handle real-time hover selection
+    const int itemUnderMouse = MenuScreen::getMenuItemUnderMouse(state, input.getMousePosition(), menuIndex,
+                                                                 selectedLevel, unlockedLevelCount, selectedDifficulty,
+                                                                 walletCoins, shopIndex, legendUnlocked, profileLevels,
+                                                                 pauseMenuIndex, controlsPlayerIndex, controlsActionIndex);
+    if (itemUnderMouse >= 0 && itemUnderMouse < pauseItemCount) {
+        pauseMenuIndex = itemUnderMouse;
+    }
+
+    if (p1Input.menuBack) {
+        state = GameState::Playing;
         return;
     }
-    if (input.pressed(sf::Keyboard::Key::Left)) gameSpeed = std::max(0.25f, gameSpeed - 0.25f);
-    if (input.pressed(sf::Keyboard::Key::Right)) gameSpeed = std::min(2.0f, gameSpeed + 0.25f);
-    if (input.pressed(sf::Keyboard::Key::Down)) audio.setMasterVolume(audio.getMasterVolume() - 10.0f);
-    if (input.pressed(sf::Keyboard::Key::Up)) audio.setMasterVolume(audio.getMasterVolume() + 10.0f);
+    if (p1Input.menuUp) {
+        pauseMenuIndex = (pauseMenuIndex + pauseItemCount - 1) % pauseItemCount;
+        // Auto-scroll viewport for scrollable menus
+        const int maxVisible = MenuScreen::getMaxVisibleItems(state);
+        if (pauseMenuIndex < MenuScreen::getViewportOffset()) {
+            MenuScreen::setViewportOffset(pauseMenuIndex);
+        } else if (pauseMenuIndex >= MenuScreen::getViewportOffset() + maxVisible) {
+            MenuScreen::setViewportOffset(pauseMenuIndex - maxVisible + 1);
+        }
+    }
+    if (p1Input.menuDown) {
+        pauseMenuIndex = (pauseMenuIndex + 1) % pauseItemCount;
+        // Auto-scroll viewport for scrollable menus
+        const int maxVisible = MenuScreen::getMaxVisibleItems(state);
+        if (pauseMenuIndex < MenuScreen::getViewportOffset()) {
+            MenuScreen::setViewportOffset(pauseMenuIndex);
+        } else if (pauseMenuIndex >= MenuScreen::getViewportOffset() + maxVisible) {
+            MenuScreen::setViewportOffset(pauseMenuIndex - maxVisible + 1);
+        }
+    }
+    if (!p1Input.menuConfirm && !input.mousePressed(sf::Mouse::Button::Left)) return;
+
+    if (pauseMenuIndex == 0) {
+        state = GameState::Playing;
+    } else if (pauseMenuIndex == 1) {
+        controlsPlayerIndex = 0;
+        controlsActionIndex = 0;
+        rebinding = false;
+        rebindWarning.clear();
+        state = GameState::Controls;
+        MenuScreen::setViewportOffset(0); // Reset viewport when switching menus
+    } else {
+        state = GameState::Menu;
+        MenuScreen::setViewportOffset(0); // Reset viewport when switching menus
+    }
+}
+
+void Game::updateControls(float dt) {
+    const InputState& p1Input = input.getPlayer1Input();
+    if (rebindWarningTimer > 0.0f) {
+        rebindWarningTimer -= dt;
+        if (rebindWarningTimer <= 0.0f) rebindWarning.clear();
+    }
+
+    // Handle mouse wheel viewport scrolling
+    if (input.getMouseWheelDelta() != 0.0f) {
+        const int delta = input.getMouseWheelDelta() > 0 ? -1 : 1;
+        const int maxVisible = MenuScreen::getMaxVisibleItems(state);
+        const int totalItems = MenuScreen::getTotalItems(state, legendUnlocked, profileLevels);
+        int newOffset = MenuScreen::getViewportOffset() + delta;
+        newOffset = std::max(0, std::min(newOffset, totalItems - maxVisible));
+        MenuScreen::setViewportOffset(newOffset);
+        input.resetMouseWheelDelta();
+    }
+
+    // Handle real-time hover selection
+    const int itemUnderMouse = MenuScreen::getMenuItemUnderMouse(state, input.getMousePosition(), menuIndex,
+                                                                 selectedLevel, unlockedLevelCount, selectedDifficulty,
+                                                                 walletCoins, shopIndex, legendUnlocked, profileLevels,
+                                                                 pauseMenuIndex, controlsPlayerIndex, controlsActionIndex);
+    if (itemUnderMouse >= 0 && itemUnderMouse < InputManager::ActionCount) {
+        controlsActionIndex = itemUnderMouse;
+    }
+
+    if (rebinding) {
+        if (p1Input.menuBack) {
+            rebinding = false;
+            return;
+        }
+        const sf::Keyboard::Key newKey = input.pollNewKey();
+        if (newKey == sf::Keyboard::Key::Unknown) return;
+
+        if (input.isKeyAssignedExcept(newKey, controlsPlayerIndex, controlsActionIndex)) {
+            rebindWarning = "Key already assigned: " + InputManager::getKeyName(newKey);
+            rebindWarningTimer = 2.0f;
+            return;
+        }
+        input.rebindKey(controlsPlayerIndex, controlsActionIndex, newKey);
+        rebinding = false;
+        return;
+    }
+
+    if (p1Input.menuBack) {
+        state = GameState::Paused;
+        MenuScreen::setViewportOffset(0); // Reset viewport when switching menus
+        return;
+    }
+    if (p1Input.menuUp) {
+        controlsActionIndex = (controlsActionIndex + InputManager::ActionCount - 1) % InputManager::ActionCount;
+        // Auto-scroll viewport when using keyboard navigation
+        const int maxVisible = MenuScreen::getMaxVisibleItems(state);
+        if (controlsActionIndex < MenuScreen::getViewportOffset()) {
+            MenuScreen::setViewportOffset(controlsActionIndex);
+        } else if (controlsActionIndex >= MenuScreen::getViewportOffset() + maxVisible) {
+            MenuScreen::setViewportOffset(controlsActionIndex - maxVisible + 1);
+        }
+    }
+    if (p1Input.menuDown) {
+        controlsActionIndex = (controlsActionIndex + 1) % InputManager::ActionCount;
+        // Auto-scroll viewport when using keyboard navigation
+        const int maxVisible = MenuScreen::getMaxVisibleItems(state);
+        if (controlsActionIndex < MenuScreen::getViewportOffset()) {
+            MenuScreen::setViewportOffset(controlsActionIndex);
+        } else if (controlsActionIndex >= MenuScreen::getViewportOffset() + maxVisible) {
+            MenuScreen::setViewportOffset(controlsActionIndex - maxVisible + 1);
+        }
+    }
+    if (p1Input.menuLeft) controlsPlayerIndex = 0;
+    if (p1Input.menuRight && playerCount >= 2) controlsPlayerIndex = 1;
+    if ((p1Input.menuConfirm || input.mousePressed(sf::Mouse::Button::Left)) && itemUnderMouse >= 0) rebinding = true;
 }
 
 void Game::updateMapSelect() {
-    if (input.pressed(sf::Keyboard::Key::Escape)) {
+    const InputState& p1Input = input.getPlayer1Input();
+
+    // Handle mouse wheel viewport scrolling
+    if (input.getMouseWheelDelta() != 0.0f) {
+        const int delta = input.getMouseWheelDelta() > 0 ? -1 : 1;
+        const int maxVisible = MenuScreen::getMaxVisibleItems(state);
+        const int totalItems = MenuScreen::getTotalItems(state, legendUnlocked, profileLevels);
+        int newOffset = MenuScreen::getViewportOffset() + delta;
+        newOffset = std::max(0, std::min(newOffset, totalItems - maxVisible));
+        MenuScreen::setViewportOffset(newOffset);
+        input.resetMouseWheelDelta();
+    }
+
+    // Handle real-time hover selection
+    const int itemUnderMouse = MenuScreen::getMenuItemUnderMouse(state, input.getMousePosition(), menuIndex,
+                                                                 selectedLevel, unlockedLevelCount, selectedDifficulty,
+                                                                 walletCoins, shopIndex, legendUnlocked, profileLevels,
+                                                                 pauseMenuIndex, controlsPlayerIndex, controlsActionIndex);
+    if (itemUnderMouse >= 0 && itemUnderMouse < unlockedLevelCount) {
+        selectedLevel = itemUnderMouse;
+    }
+
+    if (p1Input.menuBack) {
         state = GameState::Menu;
+        MenuScreen::setViewportOffset(0); // Reset viewport when switching menus
         return;
     }
-    if (input.pressed(sf::Keyboard::Key::Up)) selectedLevel = (selectedLevel + static_cast<int>(LEVELS.size()) - 1) % static_cast<int>(LEVELS.size());
-    if (input.pressed(sf::Keyboard::Key::Down)) selectedLevel = (selectedLevel + 1) % static_cast<int>(LEVELS.size());
+    if (p1Input.menuUp) {
+        selectedLevel = (selectedLevel + static_cast<int>(LEVELS.size()) - 1) % static_cast<int>(LEVELS.size());
+        // Auto-scroll viewport for scrollable menus
+        const int maxVisible = MenuScreen::getMaxVisibleItems(state);
+        if (selectedLevel < MenuScreen::getViewportOffset()) {
+            MenuScreen::setViewportOffset(selectedLevel);
+        } else if (selectedLevel >= MenuScreen::getViewportOffset() + maxVisible) {
+            MenuScreen::setViewportOffset(selectedLevel - maxVisible + 1);
+        }
+    }
+    if (p1Input.menuDown) {
+        selectedLevel = (selectedLevel + 1) % static_cast<int>(LEVELS.size());
+        // Auto-scroll viewport for scrollable menus
+        const int maxVisible = MenuScreen::getMaxVisibleItems(state);
+        if (selectedLevel < MenuScreen::getViewportOffset()) {
+            MenuScreen::setViewportOffset(selectedLevel);
+        } else if (selectedLevel >= MenuScreen::getViewportOffset() + maxVisible) {
+            MenuScreen::setViewportOffset(selectedLevel - maxVisible + 1);
+        }
+    }
     if (selectedLevel >= unlockedLevelCount) selectedLevel = std::max(0, unlockedLevelCount - 1);
-    if (input.pressed(sf::Keyboard::Key::Enter) && selectedLevel < unlockedLevelCount) {
+    if ((p1Input.menuConfirm || input.mousePressed(sf::Mouse::Button::Left)) && selectedLevel < unlockedLevelCount) {
         activeSelectPlayer = 0;
         state = GameState::CharacterSelect;
+        MenuScreen::setViewportOffset(0); // Reset viewport when switching menus
     }
 }
 
 void Game::updateDifficultySelect() {
-    if (input.pressed(sf::Keyboard::Key::Escape)) {
+    const InputState& p1Input = input.getPlayer1Input();
+
+    // Handle mouse wheel viewport scrolling
+    if (input.getMouseWheelDelta() != 0.0f) {
+        const int delta = input.getMouseWheelDelta() > 0 ? -1 : 1;
+        const int maxVisible = MenuScreen::getMaxVisibleItems(state);
+        const int totalItems = MenuScreen::getTotalItems(state, legendUnlocked, profileLevels);
+        int newOffset = MenuScreen::getViewportOffset() + delta;
+        newOffset = std::max(0, std::min(newOffset, totalItems - maxVisible));
+        MenuScreen::setViewportOffset(newOffset);
+        input.resetMouseWheelDelta();
+    }
+
+    // Handle real-time hover selection
+    const int itemUnderMouse = MenuScreen::getMenuItemUnderMouse(state, input.getMousePosition(), menuIndex,
+                                                                 selectedLevel, unlockedLevelCount, selectedDifficulty,
+                                                                 walletCoins, shopIndex, legendUnlocked, profileLevels,
+                                                                 pauseMenuIndex, controlsPlayerIndex, controlsActionIndex);
+    if (itemUnderMouse >= 0 && itemUnderMouse < 3) {
+        selectedDifficulty = itemUnderMouse;
+    }
+
+    if (p1Input.menuBack) {
         state = GameState::Menu;
+        MenuScreen::setViewportOffset(0); // Reset viewport when switching menus
         return;
     }
-    if (input.pressed(sf::Keyboard::Key::Up)) selectedDifficulty = (selectedDifficulty + 2) % 3;
-    if (input.pressed(sf::Keyboard::Key::Down)) selectedDifficulty = (selectedDifficulty + 1) % 3;
-    if (input.pressed(sf::Keyboard::Key::Enter)) {
+    if (p1Input.menuUp) {
+        selectedDifficulty = (selectedDifficulty + 2) % 3;
+        // Auto-scroll viewport for scrollable menus
+        const int maxVisible = MenuScreen::getMaxVisibleItems(state);
+        if (selectedDifficulty < MenuScreen::getViewportOffset()) {
+            MenuScreen::setViewportOffset(selectedDifficulty);
+        } else if (selectedDifficulty >= MenuScreen::getViewportOffset() + maxVisible) {
+            MenuScreen::setViewportOffset(selectedDifficulty - maxVisible + 1);
+        }
+    }
+    if (p1Input.menuDown) {
+        selectedDifficulty = (selectedDifficulty + 1) % 3;
+        // Auto-scroll viewport for scrollable menus
+        const int maxVisible = MenuScreen::getMaxVisibleItems(state);
+        if (selectedDifficulty < MenuScreen::getViewportOffset()) {
+            MenuScreen::setViewportOffset(selectedDifficulty);
+        } else if (selectedDifficulty >= MenuScreen::getViewportOffset() + maxVisible) {
+            MenuScreen::setViewportOffset(selectedDifficulty - maxVisible + 1);
+        }
+    }
+    if (p1Input.menuConfirm || input.mousePressed(sf::Mouse::Button::Left)) {
         state = GameState::Menu;
+        MenuScreen::setViewportOffset(0); // Reset viewport when switching menus
     }
 }
 
 void Game::updateCharacterSelect() {
-    if (input.pressed(sf::Keyboard::Key::A)) {
+    const InputState& p1Input = input.getPlayer1Input();
+    const InputState& p2Input = input.getPlayer2Input();
+
+    // Handle mouse wheel viewport scrolling
+    if (input.getMouseWheelDelta() != 0.0f) {
+        const int delta = input.getMouseWheelDelta() > 0 ? -1 : 1;
+        const int maxVisible = MenuScreen::getMaxVisibleItems(state);
+        const int totalItems = MenuScreen::getTotalItems(state, legendUnlocked, profileLevels);
+        int newOffset = MenuScreen::getViewportOffset() + delta;
+        newOffset = std::max(0, std::min(newOffset, totalItems - maxVisible));
+        MenuScreen::setViewportOffset(newOffset);
+        input.resetMouseWheelDelta();
+    }
+
+    // Handle real-time hover selection
+    const int itemUnderMouse = MenuScreen::getMenuItemUnderMouse(state, input.getMousePosition(), menuIndex,
+                                                                 selectedLevel, unlockedLevelCount, selectedDifficulty,
+                                                                 walletCoins, shopIndex, legendUnlocked, profileLevels,
+                                                                 pauseMenuIndex, controlsPlayerIndex, controlsActionIndex);
+    if (itemUnderMouse >= 0 && itemUnderMouse < static_cast<int>(Player::profiles().size())) {
+        if (profileUnlocked(itemUnderMouse)) {
+            selectedProfiles[activeSelectPlayer] = itemUnderMouse;
+        }
+    }
+
+    if (p1Input.moveLeft) {
         moveProfileSelection(0, -1);
         activeSelectPlayer = 0;
+        // Auto-scroll viewport
+        const int maxVisible = MenuScreen::getMaxVisibleItems(state);
+        if (selectedProfiles[0] < MenuScreen::getViewportOffset()) {
+            MenuScreen::setViewportOffset(selectedProfiles[0]);
+        } else if (selectedProfiles[0] >= MenuScreen::getViewportOffset() + maxVisible) {
+            MenuScreen::setViewportOffset(selectedProfiles[0] - maxVisible + 1);
+        }
     }
-    if (input.pressed(sf::Keyboard::Key::D)) {
+    if (p1Input.moveRight) {
         moveProfileSelection(0, 1);
         activeSelectPlayer = 0;
+        // Auto-scroll viewport
+        const int maxVisible = MenuScreen::getMaxVisibleItems(state);
+        if (selectedProfiles[0] < MenuScreen::getViewportOffset()) {
+            MenuScreen::setViewportOffset(selectedProfiles[0]);
+        } else if (selectedProfiles[0] >= MenuScreen::getViewportOffset() + maxVisible) {
+            MenuScreen::setViewportOffset(selectedProfiles[0] - maxVisible + 1);
+        }
     }
-    if (playerCount >= 2 && input.pressed(sf::Keyboard::Key::Left)) {
+    if (playerCount >= 2 && p2Input.moveLeft) {
         moveProfileSelection(1, -1);
         activeSelectPlayer = 1;
+        // Auto-scroll viewport
+        const int maxVisible = MenuScreen::getMaxVisibleItems(state);
+        if (selectedProfiles[1] < MenuScreen::getViewportOffset()) {
+            MenuScreen::setViewportOffset(selectedProfiles[1]);
+        } else if (selectedProfiles[1] >= MenuScreen::getViewportOffset() + maxVisible) {
+            MenuScreen::setViewportOffset(selectedProfiles[1] - maxVisible + 1);
+        }
     }
-    if (playerCount >= 2 && input.pressed(sf::Keyboard::Key::Right)) {
+    if (playerCount >= 2 && p2Input.moveRight) {
         moveProfileSelection(1, 1);
         activeSelectPlayer = 1;
+        // Auto-scroll viewport
+        const int maxVisible = MenuScreen::getMaxVisibleItems(state);
+        if (selectedProfiles[1] < MenuScreen::getViewportOffset()) {
+            MenuScreen::setViewportOffset(selectedProfiles[1]);
+        } else if (selectedProfiles[1] >= MenuScreen::getViewportOffset() + maxVisible) {
+            MenuScreen::setViewportOffset(selectedProfiles[1] - maxVisible + 1);
+        }
     }
-    if (input.pressed(sf::Keyboard::Key::Escape)) state = GameState::LevelSelect;
-    if (input.pressed(sf::Keyboard::Key::Enter)) restart();
+    if (p1Input.menuBack) {
+        state = GameState::LevelSelect;
+        MenuScreen::setViewportOffset(0); // Reset viewport when switching menus
+    }
+    if ((p1Input.menuConfirm || input.mousePressed(sf::Mouse::Button::Left)) && itemUnderMouse >= 0) restart();
 }
 
 void Game::updateShop() {
     const int count = static_cast<int>(Player::profiles().size());
     const int rows = count + 1;
-    if (input.pressed(sf::Keyboard::Key::Escape)) {
+    const InputState& p1Input = input.getPlayer1Input();
+
+    // Handle mouse wheel viewport scrolling
+    if (input.getMouseWheelDelta() != 0.0f) {
+        const int delta = input.getMouseWheelDelta() > 0 ? -1 : 1;
+        const int maxVisible = MenuScreen::getMaxVisibleItems(state);
+        const int totalItems = MenuScreen::getTotalItems(state, legendUnlocked, profileLevels);
+        int newOffset = MenuScreen::getViewportOffset() + delta;
+        newOffset = std::max(0, std::min(newOffset, totalItems - maxVisible));
+        MenuScreen::setViewportOffset(newOffset);
+        input.resetMouseWheelDelta();
+    }
+
+    // Handle real-time hover selection
+    const int itemUnderMouse = MenuScreen::getMenuItemUnderMouse(state, input.getMousePosition(), menuIndex,
+                                                                 selectedLevel, unlockedLevelCount, selectedDifficulty,
+                                                                 walletCoins, shopIndex, legendUnlocked, profileLevels,
+                                                                 pauseMenuIndex, controlsPlayerIndex, controlsActionIndex);
+    if (itemUnderMouse >= 0 && itemUnderMouse <= count) {
+        shopIndex = itemUnderMouse;
+    }
+
+    if (p1Input.menuBack) {
         state = GameState::Menu;
+        MenuScreen::setViewportOffset(0); // Reset viewport when switching menus
         return;
     }
-    if (input.pressed(sf::Keyboard::Key::Up)) shopIndex = (shopIndex + rows - 1) % rows;
-    if (input.pressed(sf::Keyboard::Key::Down)) shopIndex = (shopIndex + 1) % rows;
-    if (!input.pressed(sf::Keyboard::Key::Enter)) return;
+    if (p1Input.menuUp) {
+        shopIndex = (shopIndex + rows - 1) % rows;
+        // Auto-scroll viewport for scrollable menus
+        const int maxVisible = MenuScreen::getMaxVisibleItems(state);
+        if (shopIndex < MenuScreen::getViewportOffset()) {
+            MenuScreen::setViewportOffset(shopIndex);
+        } else if (shopIndex >= MenuScreen::getViewportOffset() + maxVisible) {
+            MenuScreen::setViewportOffset(shopIndex - maxVisible + 1);
+        }
+    }
+    if (p1Input.menuDown) {
+        shopIndex = (shopIndex + 1) % rows;
+        // Auto-scroll viewport for scrollable menus
+        const int maxVisible = MenuScreen::getMaxVisibleItems(state);
+        if (shopIndex < MenuScreen::getViewportOffset()) {
+            MenuScreen::setViewportOffset(shopIndex);
+        } else if (shopIndex >= MenuScreen::getViewportOffset() + maxVisible) {
+            MenuScreen::setViewportOffset(shopIndex - maxVisible + 1);
+        }
+    }
+    if (!p1Input.menuConfirm && !input.mousePressed(sf::Mouse::Button::Left)) return;
     if (shopIndex == count) {
         state = GameState::Menu;
+        MenuScreen::setViewportOffset(0); // Reset viewport when switching menus
         return;
     }
     const int legendIndex = count - 1;
@@ -407,12 +789,13 @@ void Game::render() {
     window.draw(background);
 
     const bool showLevel = state == GameState::Playing || state == GameState::Paused ||
-                           state == GameState::Victory || state == GameState::GameOver;
+                           state == GameState::Controls || state == GameState::Victory || state == GameState::GameOver;
     if (showLevel) {
         level.draw(window, camera);
         hud.draw(window, level);
     }
     menu.draw(window, state, menuIndex, selectedProfiles, activeSelectPlayer, playerCount, audio.getMasterVolume(), gameSpeed,
-              selectedLevel, unlockedLevelCount, selectedDifficulty, walletCoins, shopIndex, legendUnlocked, profileLevels);
+              selectedLevel, unlockedLevelCount, selectedDifficulty, walletCoins, shopIndex, legendUnlocked, profileLevels,
+              pauseMenuIndex, controlsPlayerIndex, controlsActionIndex, rebinding, rebindWarning, input);
     window.display();
 }
