@@ -19,7 +19,7 @@ void ShooterEnemy::update(float dt, Level& level) {
         facingDirection = target->position.x > position.x ? 1 : -1;
         shootCooldown = 1.5f;
         level.addProjectile(std::make_unique<Projectile>(
-            position + sf::Vector2f(24.0f, 24.0f),
+            position + sf::Vector2f(24.0f, 29.0f),
             sf::Vector2f(facingDirection * 300.f, 0),
             false
         ));

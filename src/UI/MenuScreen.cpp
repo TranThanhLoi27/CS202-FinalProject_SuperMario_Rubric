@@ -8,16 +8,15 @@ namespace {
 const sf::Texture* selector1Texture = nullptr;
 const sf::Texture* selector2Texture = nullptr;
 
-constexpr float kFrameWidth = 512.0f;
-constexpr float kFrameHeight = 192.0f;
-constexpr float kBaseRowHeight = 58.0f;
-constexpr float kSelectorScaleX = (kBaseRowHeight / kFrameHeight) * 4.0f;
-constexpr float kSelectorScaleY = (kBaseRowHeight / kFrameHeight) * 2.0f;
+constexpr float kFrameWidth = 500.0f;
+constexpr float kFrameHeight = 200.0f;
+constexpr float kSelectorScaleX = 1.0f;
+constexpr float kSelectorScaleY = 0.5f;
 constexpr float kDisplayWidth = kFrameWidth * kSelectorScaleX;
 constexpr float kDisplayHeight = kFrameHeight * kSelectorScaleY;
 constexpr float kCenterX = (static_cast<float>(Constants::WINDOW_WIDTH) - kDisplayWidth) * 0.5f;
 constexpr float kScreenCenterX = static_cast<float>(Constants::WINDOW_WIDTH) * 0.5f;
-constexpr float kRowSpacing = 120.0f;
+constexpr float kRowSpacing = 115.0f;
 
 int viewportOffset = 0; // Which item is at the top of the viewport
 constexpr int kMaxVisibleItems = 4; // Maximum items visible at once (for scrollable menus)

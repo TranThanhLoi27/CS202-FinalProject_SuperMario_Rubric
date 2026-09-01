@@ -19,11 +19,13 @@
 const sf::Texture* Level::solidTexture = nullptr;
 const sf::Texture* Level::goalTexture = nullptr;
 const sf::Texture* Level::spikeTexture = nullptr;
+const sf::Texture* Level::backgroundTexture = nullptr;
 
-void Level::setTextures(const sf::Texture& solid, const sf::Texture& goal, const sf::Texture& spike, const sf::Texture& fairy) {
+void Level::setTextures(const sf::Texture& solid, const sf::Texture& goal, const sf::Texture& spike, const sf::Texture& fairy, const sf::Texture& background) {
     solidTexture = &solid;
     goalTexture = &goal;
     spikeTexture = &spike;
+    backgroundTexture = &background;
     FairyCompanionManager::setTexture(fairy);
 }
 
@@ -255,6 +257,11 @@ void Level::handleCheckpoints() {
             if (!MathUtils::intersects(player->getBounds(), checkpoint.bounds)) continue;
             player->setSpawn({checkpoint.bounds.position.x, checkpoint.bounds.position.y - player->size.y});
         }
+        for (const auto& goal : goals) {
+            if (!MathUtils::intersects(player->getBounds(), goal.getBound())) continue;
+            player->setSpawn({goal.getBound().position.x + (goal.getBound().size.x - player->size.x) * 0.5f,
+                              goal.getBound().position.y + goal.getBound().size.y - player->size.y});
+        }
     }
 }
 
@@ -305,7 +312,7 @@ bool Level::hasWon() const {
 }
 
 bool Level::allDead() const {
-    return std::all_of(players.begin(), players.end(), [](const auto& p) { return p->isRespawning(); });
+    return false; // Allow players to respawn indefinitely at checkpoints/goals
 }
 
 int Level::collectedCoins() const {
@@ -396,6 +403,19 @@ void Level::drawMarkers(sf::RenderWindow& window, sf::Vector2f camera) const {
 }
 
 void Level::drawBackground(sf::RenderWindow& window, sf::Vector2f camera) const {
-    (void)window;
-    (void)camera;
+    if (!backgroundTexture) return;
+
+    sf::Texture& bgTex = const_cast<sf::Texture&>(*backgroundTexture);
+    bgTex.setRepeated(true);
+
+    sf::Sprite bgSprite(bgTex);
+    // Smooth parallax scrolling effect moving at 0.35x horizontal camera speed and 0.15x vertical speed
+    const int rectLeft = static_cast<int>(camera.x * 0.35f);
+    const int rectTop = static_cast<int>(camera.y * 0.15f);
+    const int rectWidth = static_cast<int>(Constants::WINDOW_WIDTH);
+    const int rectHeight = static_cast<int>(Constants::WINDOW_HEIGHT);
+
+    bgSprite.setTextureRect(sf::IntRect({rectLeft, rectTop}, {rectWidth, rectHeight}));
+    bgSprite.setPosition({0.0f, 0.0f});
+    window.draw(bgSprite);
 }

@@ -55,7 +55,7 @@ Game::Game()
     HUD::setFont(assets.font("roboto"));
     loadTexture();
     MenuScreen::setSelectorTextures(assets.texture("selector1"), assets.texture("selector2"));
-    Level::setTextures(assets.texture("solid"), assets.texture("goal"), assets.texture("spike"), assets.texture("fairy"));
+    Level::setTextures(assets.texture("solid"), assets.texture("goal"), assets.texture("spike"), assets.texture("fairy"), assets.texture("background"));
     HUD::setTextures(assets.texture("heart"), assets.texture("meat"), assets.texture("food"),
                       assets.texture("coin"), assets.texture("solid"));
     EnemyTextures::setTextures(assets.texture("patrol"), assets.texture("shooter"), 
@@ -688,15 +688,15 @@ void Game::updateCamera(float dt) {
 void Game::render() {
     window.clear({16, 19, 24});
 
-    sf::Sprite background(assets.texture("background"));
-    background.setPosition({0.0f, 0.0f});
-    window.draw(background);
-
     const bool showLevel = state == GameState::Playing || state == GameState::Paused ||
                            state == GameState::Controls || state == GameState::Victory || state == GameState::GameOver;
     if (showLevel) {
         level.draw(window, camera);
         hud.draw(window, level);
+    } else {
+        sf::Sprite background(assets.texture("background"));
+        background.setPosition({0.0f, 0.0f});
+        window.draw(background);
     }
 
     // Draw achievement notification
