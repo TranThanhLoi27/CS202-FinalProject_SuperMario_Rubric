@@ -28,6 +28,7 @@ public:
     // Viewport and scrolling support
     static int& getViewportOffset();
     static void setViewportOffset(int offset);
+    static void ensureVisible(int itemIndex, GameState state);
     static int getMaxVisibleItems(GameState state);
     static int getTotalItems(GameState state, bool legendUnlocked, const std::vector<int>& profileLevels);
 

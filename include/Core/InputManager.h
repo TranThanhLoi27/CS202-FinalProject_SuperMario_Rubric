@@ -2,6 +2,7 @@
 
 #include <SFML/Window/Keyboard.hpp>
 #include <SFML/Window/Mouse.hpp>
+#include <SFML/Window/WindowBase.hpp>
 #include <string>
 #include <vector>
 
@@ -51,6 +52,7 @@ public:
 
     InputManager();
     void update();
+    void update(const sf::WindowBase& window);
     const InputState& getPlayer1Input() const;
     const InputState& getPlayer2Input() const;
     bool pressed(sf::Keyboard::Key key) const;

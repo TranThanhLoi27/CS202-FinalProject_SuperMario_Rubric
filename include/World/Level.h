@@ -48,6 +48,9 @@ public:
     bool allDead() const;
     int collectedCoins() const;
 
+    FairyCompanionManager& getFairies();
+    const FairyCompanionManager& getFairies() const;
+
     TileMap& getTileMap();
     const TileMap& getTileMap() const;
     std::vector<std::unique_ptr<Player>>& getPlayers();
@@ -56,6 +59,11 @@ public:
     std::vector<std::unique_ptr<Projectile>>& getProjectiles();
     std::vector<std::unique_ptr<DroppedItem>>& getDroppedItems();
     std::vector<std::unique_ptr<Tombstone>>& getTombstones();
+
+    std::vector<bool> getAchievements() const;
+    void setAchievements(const std::vector<bool>& achievements);
+    void resetAchievements();
+    void checkAchievements();
 
 private:
     void spawnFromMap();
@@ -82,6 +90,11 @@ private:
     std::vector<std::unique_ptr<DroppedItem>> droppedItems;
     std::vector<std::unique_ptr<Tombstone>> tombstones;
     FairyCompanionManager fairies;
+
+    std::vector<bool> achievements; // [0] first kill, [1] 5 kills, [2] no damage run, [3] boss defeated
+    int totalKills = 0;
+    bool levelStartedWithDamage = false;
+    bool bossDefeated = false;
 
     static const sf::Texture* solidTexture;
     static const sf::Texture* goalTexture;

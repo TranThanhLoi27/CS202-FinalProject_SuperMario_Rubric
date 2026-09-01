@@ -21,6 +21,8 @@ void FairyCompanionManager::initForPlayers(std::size_t playerCount) {
             f.angleOffset = (2.0f * 3.14159265f / count) * i;
             f.phase = static_cast<float>(i) * 1.5f;
             f.flutterSpeed = 4.0f + static_cast<float>(i) * 0.5f;
+            f.position = {0.0f, 0.0f};
+            f.velocity = {0.0f, 0.0f};
             playerFairies[p].push_back(f);
         }
     }
@@ -56,10 +58,12 @@ void FairyCompanionManager::update(float dt, const std::vector<std::unique_ptr<P
                 if (fairy.particles.size() < 12) {
                     FairyParticle part;
                     part.position = fairy.position + sf::Vector2f((std::rand() % 10 - 5) * 0.8f, (std::rand() % 10 - 5) * 0.8f);
+                    part.velocity = {0.0f, 0.0f};
                     part.scale = 0.6f;
                     part.alpha = 240.0f;
                     part.lifetime = 0.22f;
                     part.maxLifetime = 0.22f;
+                    part.color = sf::Color::White;
                     fairy.particles.push_back(part);
                 }
             } else {
@@ -87,7 +91,14 @@ void FairyCompanionManager::update(float dt, const std::vector<std::unique_ptr<P
                 part.lifetime -= dt;
                 part.scale *= 0.94f;
                 part.alpha = (part.lifetime / part.maxLifetime) * 240.0f;
+
+                // Move particles if they have velocity (fireworks)
+                if (part.velocity.x != 0.0f || part.velocity.y != 0.0f) {
+                    part.position += part.velocity * dt;
+                    part.velocity *= 0.98f; // Friction
+                }
             }
+
             fairy.particles.erase(
                 std::remove_if(fairy.particles.begin(), fairy.particles.end(),
                                [](const FairyParticle& pt) { return pt.lifetime <= 0.0f; }),
@@ -110,7 +121,7 @@ void FairyCompanionManager::draw(sf::RenderWindow& window, sf::Vector2f camera) 
             for (const auto& part : fairy.particles) {
                 sprite.setPosition(part.position - camera);
                 sprite.setScale({part.scale, part.scale});
-                sprite.setColor(sf::Color(255, 255, 255, static_cast<std::uint8_t>(std::clamp(part.alpha, 0.0f, 255.0f))));
+                sprite.setColor(sf::Color(part.color.r, part.color.g, part.color.b, static_cast<std::uint8_t>(std::clamp(part.alpha, 0.0f, 255.0f))));
                 window.draw(sprite);
             }
 
@@ -119,6 +130,44 @@ void FairyCompanionManager::draw(sf::RenderWindow& window, sf::Vector2f camera) 
             sprite.setScale({fairy.currentScale, fairy.currentScale});
             sprite.setColor(sf::Color(255, 255, 255, static_cast<std::uint8_t>(std::clamp(fairy.currentAlpha, 0.0f, 255.0f))));
             window.draw(sprite);
+        }
+    }
+}
+
+void FairyCompanionManager::createFireworks(sf::Vector2f position, int count) {
+    if (playerFairies.empty()) {
+        playerFairies.resize(1);
+    }
+
+    // Create temporary fireworks particles
+    for (auto& fairies : playerFairies) {
+        for (auto& fairy : fairies) {
+            // Clear existing particles and add fireworks
+            fairy.particles.clear();
+
+            for (int i = 0; i < count; ++i) {
+                FairyParticle part;
+                const float angle = (2.0f * 3.14159265f / count) * i;
+                const float speed = 150.0f + (std::rand() % 100);
+                part.position = position;
+                part.velocity = sf::Vector2f(std::cos(angle) * speed, std::sin(angle) * speed);
+                part.scale = 1.5f;
+                part.alpha = 255.0f;
+                part.lifetime = 1.0f;
+                part.maxLifetime = 1.0f;
+
+                // Random colors for fireworks
+                const int colorChoice = std::rand() % 5;
+                switch (colorChoice) {
+                    case 0: part.color = sf::Color(255, 100, 100); break; // Red
+                    case 1: part.color = sf::Color(100, 255, 100); break; // Green
+                    case 2: part.color = sf::Color(100, 100, 255); break; // Blue
+                    case 3: part.color = sf::Color(255, 255, 100); break; // Yellow
+                    case 4: part.color = sf::Color(255, 100, 255); break; // Purple
+                }
+
+                fairy.particles.push_back(part);
+            }
         }
     }
 }

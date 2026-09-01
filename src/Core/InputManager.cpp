@@ -59,19 +59,43 @@ InputManager::InputManager() {
 }
 
 void InputManager::update() {
-    // Ensure all registered keys are tracked
+    // Update mouse tracking using screen coordinates as fallback
+    mousePosition = sf::Mouse::getPosition();
+    previousMouseButtons = currentMouseButtons;
+    currentMouseButtons.clear();
+    if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)) currentMouseButtons.push_back(sf::Mouse::Button::Left);
+    if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Right)) currentMouseButtons.push_back(sf::Mouse::Button::Right);
+    if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Middle)) currentMouseButtons.push_back(sf::Mouse::Button::Middle);
+    
+    // Process input states
+    static const sf::Keyboard::Key allKeys[] = {
+        sf::Keyboard::Key::A, sf::Keyboard::Key::B, sf::Keyboard::Key::C, sf::Keyboard::Key::D,
+        sf::Keyboard::Key::E, sf::Keyboard::Key::F, sf::Keyboard::Key::G, sf::Keyboard::Key::H,
+        sf::Keyboard::Key::I, sf::Keyboard::Key::J, sf::Keyboard::Key::K, sf::Keyboard::Key::L,
+        sf::Keyboard::Key::M, sf::Keyboard::Key::N, sf::Keyboard::Key::O, sf::Keyboard::Key::P,
+        sf::Keyboard::Key::Q, sf::Keyboard::Key::R, sf::Keyboard::Key::S, sf::Keyboard::Key::T,
+        sf::Keyboard::Key::U, sf::Keyboard::Key::V, sf::Keyboard::Key::W, sf::Keyboard::Key::X,
+        sf::Keyboard::Key::Y, sf::Keyboard::Key::Z,
+        sf::Keyboard::Key::Num0, sf::Keyboard::Key::Num1, sf::Keyboard::Key::Num2,
+        sf::Keyboard::Key::Num3, sf::Keyboard::Key::Num4, sf::Keyboard::Key::Num5,
+        sf::Keyboard::Key::Num6, sf::Keyboard::Key::Num7, sf::Keyboard::Key::Num8, sf::Keyboard::Key::Num9,
+        sf::Keyboard::Key::Left, sf::Keyboard::Key::Right, sf::Keyboard::Key::Up, sf::Keyboard::Key::Down,
+        sf::Keyboard::Key::Space, sf::Keyboard::Key::Enter, sf::Keyboard::Key::Tab,
+        sf::Keyboard::Key::LControl, sf::Keyboard::Key::LShift, sf::Keyboard::Key::LAlt,
+        sf::Keyboard::Key::RControl, sf::Keyboard::Key::RShift, sf::Keyboard::Key::RAlt,
+        sf::Keyboard::Key::Numpad0, sf::Keyboard::Key::Numpad1, sf::Keyboard::Key::Numpad2,
+        sf::Keyboard::Key::Numpad3, sf::Keyboard::Key::Numpad4, sf::Keyboard::Key::Numpad5,
+        sf::Keyboard::Key::Numpad6, sf::Keyboard::Key::Numpad7, sf::Keyboard::Key::Numpad8,
+        sf::Keyboard::Key::Numpad9
+    };
+
     relevantKeys.clear();
+    for (auto k : allKeys) {
+        relevantKeys.push_back(k);
+    }
     for (int i = 0; i < ActionCount; ++i) {
         relevantKeys.push_back(p1Keys[i]);
         relevantKeys.push_back(p2Keys[i]);
-    }
-    const sf::Keyboard::Key extraKeys[] = {
-        sf::Keyboard::Key::Num1, sf::Keyboard::Key::Num2, sf::Keyboard::Key::Num3,
-        sf::Keyboard::Key::Num4, sf::Keyboard::Key::Num5, sf::Keyboard::Key::Num6,
-        sf::Keyboard::Key::Num7, sf::Keyboard::Key::Num8, sf::Keyboard::Key::Num9, sf::Keyboard::Key::Num0
-    };
-    for (auto k : extraKeys) {
-        relevantKeys.push_back(k);
     }
     std::sort(relevantKeys.begin(), relevantKeys.end());
     relevantKeys.erase(std::unique(relevantKeys.begin(), relevantKeys.end()), relevantKeys.end());
@@ -81,17 +105,6 @@ void InputManager::update() {
     for (const auto key : relevantKeys) {
         if (sf::Keyboard::isKeyPressed(key)) currentKeys.push_back(key);
     }
-
-    // Update mouse tracking
-    mousePosition = sf::Mouse::getPosition();
-    previousMouseButtons = currentMouseButtons;
-    currentMouseButtons.clear();
-    if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)) currentMouseButtons.push_back(sf::Mouse::Button::Left);
-    if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Right)) currentMouseButtons.push_back(sf::Mouse::Button::Right);
-    if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Middle)) currentMouseButtons.push_back(sf::Mouse::Button::Middle);
-
-    // Reset mouse wheel delta (will be set by Game class when handling events)
-    mouseWheelDelta = 0.0f;
 
     const int digitSlot = pressedDigitSlot();
     player1 = {
@@ -138,6 +151,11 @@ void InputManager::update() {
     };
 }
 
+void InputManager::update(const sf::WindowBase& window) {
+    update();
+    mousePosition = sf::Mouse::getPosition(window);
+}
+
 const InputState& InputManager::getPlayer1Input() const {
     return player1;
 }
@@ -147,10 +165,12 @@ const InputState& InputManager::getPlayer2Input() const {
 }
 
 bool InputManager::pressed(sf::Keyboard::Key key) const {
+    if (key == sf::Keyboard::Key::Unknown) return false;
     return down(key) && std::find(previousKeys.begin(), previousKeys.end(), key) == previousKeys.end();
 }
 
 bool InputManager::down(sf::Keyboard::Key key) const {
+    if (key == sf::Keyboard::Key::Unknown) return false;
     return std::find(currentKeys.begin(), currentKeys.end(), key) != currentKeys.end();
 }
 
@@ -162,6 +182,7 @@ sf::Keyboard::Key InputManager::getKey(int playerIndex, int actionIndex) const {
 bool InputManager::rebindKey(int playerIndex, int actionIndex, sf::Keyboard::Key newKey) {
     if (actionIndex < 0 || actionIndex >= ActionCount) return false;
     if (newKey == sf::Keyboard::Key::Unknown || isKeyAssigned(newKey)) return false;
+
     if (playerIndex == 0) {
         p1Keys[actionIndex] = newKey;
     } else {
@@ -180,9 +201,9 @@ bool InputManager::isKeyAssigned(sf::Keyboard::Key key) const {
 
 bool InputManager::isKeyAssignedExcept(sf::Keyboard::Key key, int playerIndex, int actionIndex) const {
     if (key == sf::Keyboard::Key::Unknown) return false;
+    const auto* targetKeys = (playerIndex == 0) ? p1Keys : p2Keys;
     for (int i = 0; i < ActionCount; ++i) {
-        if (p1Keys[i] == key && !(playerIndex == 0 && i == actionIndex)) return true;
-        if (p2Keys[i] == key && !(playerIndex == 1 && i == actionIndex)) return true;
+        if (i != actionIndex && targetKeys[i] == key) return true;
     }
     return false;
 }

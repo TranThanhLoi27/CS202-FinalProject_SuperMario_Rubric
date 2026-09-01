@@ -20,7 +20,7 @@ constexpr float kScreenCenterX = static_cast<float>(Constants::WINDOW_WIDTH) * 0
 constexpr float kRowSpacing = 120.0f;
 
 int viewportOffset = 0; // Which item is at the top of the viewport
-constexpr int kMaxVisibleItems = 6; // Maximum items visible at once (for scrollable menus)
+constexpr int kMaxVisibleItems = 4; // Maximum items visible at once (for scrollable menus)
 
 void drawScrollDots(sf::RenderWindow& window, int totalItems, int maxVisible, int currentOffset, float y) {
     if (totalItems <= maxVisible) return;
@@ -77,27 +77,29 @@ void MenuScreen::draw(sf::RenderWindow& window, GameState state, int menuIndex, 
     window.draw(shade);
 
     if (state == GameState::Menu) {
-        HUD::drawTextCentered(window, "CO-OP PLATFORMER", {kScreenCenterX, 40.0f}, 46, {246, 233, 190});
-        const char* entries[] = {"1 Player", "2 Players", "Choose Difficulty", "Shop", "Info", "Quit"};
+        HUD::drawTextCentered(window, "CO-OP PLATFORMER", {kScreenCenterX, 25.0f}, 46, {246, 233, 190});
+        const char* entries[] = {"1 Player", "2 Players", "Choose Difficulty", "Shop", "Info", "Reset Game", "Quit"};
         const int maxVisible = getMaxVisibleItems(state);
-        const int endItem = std::min(viewportOffset + maxVisible, 6);
+        const int totalItems = 7;
+        const int endItem = std::min(viewportOffset + maxVisible, totalItems);
         for (int i = viewportOffset; i < endItem; ++i) {
-            row(window, entries[i], 78.0f + kRowSpacing * (i - viewportOffset), i == menuIndex);
+            row(window, entries[i], 75.0f + kRowSpacing * (i - viewportOffset), i == menuIndex);
         }
-        HUD::drawTextCentered(window, "Up/Down: choose   Enter: confirm", {kScreenCenterX, 660.0f}, 20, {204, 213, 210});
+        HUD::drawTextCentered(window, "Up/Down / Scroll: choose   Enter/Click: confirm", {kScreenCenterX, 565.0f}, 20, {204, 213, 210});
+        drawScrollDots(window, totalItems, maxVisible, viewportOffset, 595.0f);
         return;
     }
     if (state == GameState::LevelSelect) {
-        HUD::drawTextCentered(window, "CHOOSE MAP", {kScreenCenterX, 40.0f}, 46, {246, 233, 190});
+        HUD::drawTextCentered(window, "CHOOSE MAP", {kScreenCenterX, 30.0f}, 46, {246, 233, 190});
         const char* maps[] = {"Forest Trail", "Stone Bridge", "Spike Valley", "Boss Lair"};
         const int maxVisible = getMaxVisibleItems(state);
         const int endItem = std::min(viewportOffset + maxVisible, 4);
         for (int i = viewportOffset; i < endItem; ++i) {
             row(window, std::to_string(i + 1) + ". " + maps[i] + (i >= unlockedLevelCount ? "  [LOCKED]" : ""),
-                100.0f + kRowSpacing * (i - viewportOffset), i == selectedLevel,
+                80.0f + kRowSpacing * (i - viewportOffset), i == selectedLevel,
                 i < unlockedLevelCount ? sf::Color::White : sf::Color(140, 140, 140));
         }
-        HUD::drawTextCentered(window, "Up/Down: choose   Enter: confirm   Escape: back", {kScreenCenterX, 560.0f}, 20, {204, 213, 210});
+        HUD::drawTextCentered(window, "Up/Down: choose   Enter/Click: confirm   Escape: back", {kScreenCenterX, 570.0f}, 20, {204, 213, 210});
         return;
     }
     if (state == GameState::DifficultySelect) {
@@ -106,12 +108,12 @@ void MenuScreen::draw(sf::RenderWindow& window, GameState state, int menuIndex, 
         const int maxVisible = getMaxVisibleItems(state);
         const int endItem = std::min(viewportOffset + maxVisible, 3);
         for (int i = viewportOffset; i < endItem; ++i) {
-            row(window, levels[i], 160.0f + kRowSpacing * (i - viewportOffset), i == selectedDifficulty);
+            row(window, levels[i], 140.0f + kRowSpacing * (i - viewportOffset), i == selectedDifficulty);
         }
         return;
     }
     if (state == GameState::CharacterSelect) {
-        HUD::drawTextCentered(window, "CHOOSE CHARACTER", {kScreenCenterX, 36.0f}, 46, {246, 233, 190});
+        HUD::drawTextCentered(window, "CHOOSE CHARACTER", {kScreenCenterX, 25.0f}, 46, {246, 233, 190});
         const auto& profiles = Player::profiles();
         const int maxVisible = getMaxVisibleItems(state);
         const int totalItems = static_cast<int>(profiles.size());
@@ -121,16 +123,16 @@ void MenuScreen::draw(sf::RenderWindow& window, GameState state, int menuIndex, 
             std::string text = profiles[i].name + " - " + profiles[i].skill;
             if (locked) text += " [LOCKED]";
             const bool selected = i == selectedProfiles[0] || (playerCount == 2 && i == selectedProfiles[1]);
-            row(window, text, 72.0f + kRowSpacing * (i - viewportOffset), selected, locked ? sf::Color(145, 125, 125) : profiles[i].color);
+            row(window, text, 70.0f + kRowSpacing * (i - viewportOffset), selected, locked ? sf::Color(145, 125, 125) : profiles[i].color);
         }
         const std::string selection = playerCount == 1 ? "P1" : "P1 / P2";
-        HUD::drawTextCentered(window, selection + ": A/D, Left/Right choose   Enter: start", {kScreenCenterX, 660.0f}, 19, {204, 213, 210});
-        HUD::drawTextCentered(window, "Scroll: Mouse wheel   Active: Player " + std::to_string(activePlayer + 1), {kScreenCenterX, 690.0f}, 19, {246, 233, 190});
-        drawScrollDots(window, totalItems, maxVisible, viewportOffset, 720.0f);
+        HUD::drawTextCentered(window, selection + ": W/S, Up/Down, A/D choose   Enter/Click: start", {kScreenCenterX, 560.0f}, 19, {204, 213, 210});
+        HUD::drawTextCentered(window, "Scroll: Mouse wheel   Active: Player " + std::to_string(activePlayer + 1), {kScreenCenterX, 590.0f}, 19, {246, 233, 190});
+        drawScrollDots(window, totalItems, maxVisible, viewportOffset, 620.0f);
         return;
     }
     if (state == GameState::Shop) {
-        HUD::drawTextCentered(window, "SHOP - Coins: " + std::to_string(walletCoins), {kScreenCenterX, 36.0f}, 42, {246, 233, 190});
+        HUD::drawTextCentered(window, "SHOP - Coins: " + std::to_string(walletCoins), {kScreenCenterX, 25.0f}, 42, {246, 233, 190});
         const auto& profiles = Player::profiles();
         const int maxVisible = getMaxVisibleItems(state);
         const int totalItems = static_cast<int>(profiles.size()) + 1; // +1 for "Back"
@@ -138,13 +140,13 @@ void MenuScreen::draw(sf::RenderWindow& window, GameState state, int menuIndex, 
         for (int i = viewportOffset; i < endItem; ++i) {
             if (i < static_cast<int>(profiles.size())) {
                 row(window, profiles[i].name + "  Lv " + std::to_string(profileLevels[i]) +
-                        (i == static_cast<int>(profiles.size()) - 1 && !legendUnlocked ? "  Buy Legend: 50" : "  Upgrade: 20"),
+                        (i == static_cast<int>(profiles.size()) - 1 && !legendUnlocked ? "  Buy Legend: 80" : "  Upgrade: 20"),
                     68.0f + kRowSpacing * (i - viewportOffset), i == shopIndex);
             } else {
                 row(window, "Back", 68.0f + kRowSpacing * (i - viewportOffset), shopIndex == i);
             }
         }
-        drawScrollDots(window, totalItems, maxVisible, viewportOffset, 700.0f);
+        drawScrollDots(window, totalItems, maxVisible, viewportOffset, 560.0f);
         return;
     }
     if (state == GameState::Paused) {
@@ -156,7 +158,7 @@ void MenuScreen::draw(sf::RenderWindow& window, GameState state, int menuIndex, 
         // Show scroll indicator for controls menu
         const int totalItems = static_cast<int>(InputManager::ActionCount);
         const int maxVisible = getMaxVisibleItems(state);
-        drawScrollDots(window, totalItems, maxVisible, viewportOffset, 700.0f);
+        drawScrollDots(window, totalItems, maxVisible, viewportOffset, 560.0f);
         return;
     }
     const char* message = state == GameState::Victory ? "VICTORY" : state == GameState::GameOver ? "GAME OVER" : "INFO";
@@ -170,15 +172,38 @@ void MenuScreen::drawPause(sf::RenderWindow& window, int pauseMenuIndex) {
     const int maxVisible = getMaxVisibleItems(GameState::Paused);
     const int endItem = std::min(viewportOffset + maxVisible, 3);
     for (int i = viewportOffset; i < endItem; ++i) {
-        row(window, entries[i], 160.0f + kRowSpacing * (i - viewportOffset), i == pauseMenuIndex);
+        row(window, entries[i], 140.0f + kRowSpacing * (i - viewportOffset), i == pauseMenuIndex);
     }
-    HUD::drawTextCentered(window, "Up/Down: choose   Enter: confirm   Escape: resume", {kScreenCenterX, 560.0f}, 20, {204, 213, 210});
+    HUD::drawTextCentered(window, "Up/Down: choose   Enter/Click: confirm   Escape: resume", {kScreenCenterX, 550.0f}, 20, {204, 213, 210});
 }
 
 void MenuScreen::drawControls(sf::RenderWindow& window, int controlsPlayerIndex, int controlsActionIndex,
                               bool rebinding, const std::string& rebindWarning, const InputManager& input) {
-    const std::string playerLabel = "Player " + std::to_string(controlsPlayerIndex + 1) + " Controls";
-    HUD::drawTextCentered(window, playerLabel, {kScreenCenterX, 36.0f}, 42, {246, 233, 190});
+    const float tabWidth = 260.0f;
+    const float tabHeight = 44.0f;
+    const float p1TabX = kScreenCenterX - tabWidth - 15.0f;
+    const float p2TabX = kScreenCenterX + 15.0f;
+    const float tabY = 18.0f;
+
+    // Draw Player 1 Tab Selector
+    sf::RectangleShape p1Box({tabWidth, tabHeight});
+    p1Box.setPosition({p1TabX, tabY});
+    p1Box.setFillColor(controlsPlayerIndex == 0 ? sf::Color(246, 233, 190) : sf::Color(34, 43, 48));
+    p1Box.setOutlineThickness(2.0f);
+    p1Box.setOutlineColor(controlsPlayerIndex == 0 ? sf::Color(255, 255, 255) : sf::Color(80, 80, 80));
+    window.draw(p1Box);
+    HUD::drawTextCentered(window, "Player 1 Controls", {p1TabX + tabWidth * 0.5f, tabY + tabHeight * 0.5f}, 21,
+                          controlsPlayerIndex == 0 ? sf::Color(20, 25, 27) : sf::Color(204, 213, 210));
+
+    // Draw Player 2 Tab Selector
+    sf::RectangleShape p2Box({tabWidth, tabHeight});
+    p2Box.setPosition({p2TabX, tabY});
+    p2Box.setFillColor(controlsPlayerIndex == 1 ? sf::Color(246, 233, 190) : sf::Color(34, 43, 48));
+    p2Box.setOutlineThickness(2.0f);
+    p2Box.setOutlineColor(controlsPlayerIndex == 1 ? sf::Color(255, 255, 255) : sf::Color(80, 80, 80));
+    window.draw(p2Box);
+    HUD::drawTextCentered(window, "Player 2 Controls", {p2TabX + tabWidth * 0.5f, tabY + tabHeight * 0.5f}, 21,
+                          controlsPlayerIndex == 1 ? sf::Color(20, 25, 27) : sf::Color(204, 213, 210));
 
     const int maxVisible = getMaxVisibleItems(GameState::Controls);
     const int endItem = std::min(viewportOffset + maxVisible, static_cast<int>(InputManager::ActionCount));
@@ -186,18 +211,18 @@ void MenuScreen::drawControls(sf::RenderWindow& window, int controlsPlayerIndex,
         const std::string actionName = InputManager::getActionName(i);
         const std::string keyName = InputManager::getKeyName(input.getKey(controlsPlayerIndex, i));
         const std::string label = actionName + "  -  " + keyName;
-        row(window, label, 80.0f + kRowSpacing * (i - viewportOffset), i == controlsActionIndex);
+        row(window, label, 72.0f + kRowSpacing * (i - viewportOffset), i == controlsActionIndex);
     }
 
     if (rebinding) {
-        HUD::drawTextCentered(window, "Press an unassigned key...", {kScreenCenterX, 620.0f}, 24, {246, 233, 190});
-        HUD::drawTextCentered(window, "Escape: cancel", {kScreenCenterX, 655.0f}, 20, {204, 213, 210});
+        HUD::drawTextCentered(window, "Press an unassigned key...", {kScreenCenterX, 560.0f}, 24, {246, 233, 190});
+        HUD::drawTextCentered(window, "Escape: cancel", {kScreenCenterX, 595.0f}, 20, {204, 213, 210});
     } else {
-        HUD::drawTextCentered(window, "Left/Right: switch player   Enter: rebind   Escape: back", {kScreenCenterX, 620.0f}, 20, {204, 213, 210});
+        HUD::drawTextCentered(window, "Click tab to switch player   Click key row to rebind   Escape: back", {kScreenCenterX, 560.0f}, 20, {204, 213, 210});
     }
 
     if (!rebindWarning.empty()) {
-        HUD::drawTextCentered(window, rebindWarning, {kScreenCenterX, 690.0f}, 22, {255, 120, 120});
+        HUD::drawTextCentered(window, rebindWarning, {kScreenCenterX, 620.0f}, 22, {255, 120, 120});
     }
 }
 
@@ -220,6 +245,19 @@ int MenuScreen::getMenuItemUnderMouse(GameState state, sf::Vector2i mousePos, in
     const float mouseX = static_cast<float>(mousePos.x);
     const float mouseY = static_cast<float>(mousePos.y);
 
+    if (state == GameState::Controls) {
+        const float tabWidth = 260.0f;
+        const float tabHeight = 44.0f;
+        const float p1TabX = kScreenCenterX - tabWidth - 15.0f;
+        const float p2TabX = kScreenCenterX + 15.0f;
+        const float tabY = 18.0f;
+
+        if (mouseY >= tabY && mouseY <= tabY + tabHeight) {
+            if (mouseX >= p1TabX && mouseX <= p1TabX + tabWidth) return -10; // Player 1 tab
+            if (mouseX >= p2TabX && mouseX <= p2TabX + tabWidth) return -11; // Player 2 tab
+        }
+    }
+
     // Check if mouse is within the horizontal bounds of menu items
     if (mouseX < kCenterX || mouseX > kCenterX + kDisplayWidth) {
         return -1;
@@ -229,13 +267,13 @@ int MenuScreen::getMenuItemUnderMouse(GameState state, sf::Vector2i mousePos, in
     int totalItems = getTotalItems(state, legendUnlocked, profileLevels);
 
     // Get starting Y position based on state
-    if (state == GameState::Menu) startY = 78.0f;
-    else if (state == GameState::LevelSelect) startY = 100.0f;
-    else if (state == GameState::DifficultySelect) startY = 160.0f;
-    else if (state == GameState::CharacterSelect) startY = 72.0f;
+    if (state == GameState::Menu) startY = 75.0f;
+    else if (state == GameState::LevelSelect) startY = 80.0f;
+    else if (state == GameState::DifficultySelect) startY = 140.0f;
+    else if (state == GameState::CharacterSelect) startY = 70.0f;
     else if (state == GameState::Shop) startY = 68.0f;
-    else if (state == GameState::Paused) startY = 160.0f;
-    else if (state == GameState::Controls) startY = 80.0f;
+    else if (state == GameState::Paused) startY = 140.0f;
+    else if (state == GameState::Controls) startY = 72.0f;
 
     // Check items within viewport
     const int maxVisible = getMaxVisibleItems(state);
@@ -244,7 +282,7 @@ int MenuScreen::getMenuItemUnderMouse(GameState state, sf::Vector2i mousePos, in
     for (int i = viewportOffset; i < endItem; ++i) {
         const float itemY = startY + kRowSpacing * (i - viewportOffset);
         if (mouseY >= itemY && mouseY <= itemY + kDisplayHeight) {
-            return i;
+            return i; // Return the actual item index, not the viewport-relative index
         }
     }
 
@@ -259,15 +297,23 @@ void MenuScreen::setViewportOffset(int offset) {
     viewportOffset = offset;
 }
 
+void MenuScreen::ensureVisible(int itemIndex, GameState state) {
+    const int maxVisible = getMaxVisibleItems(state);
+    if (itemIndex < viewportOffset) {
+        viewportOffset = itemIndex;
+    } else if (itemIndex >= viewportOffset + maxVisible) {
+        viewportOffset = itemIndex - maxVisible + 1;
+    }
+}
+
 int MenuScreen::getMaxVisibleItems(GameState state) {
-    // Return different limits based on menu state
-    if (state == GameState::Menu) return 6; // All items fit
-    if (state == GameState::LevelSelect) return 4; // All items fit
-    if (state == GameState::DifficultySelect) return 3; // All items fit
-    if (state == GameState::Paused) return 3; // All items fit
-    if (state == GameState::Controls) return 4; // Scrollable (16 actions total) - chỉ hiển thị 4 một lần
-    if (state == GameState::CharacterSelect) return 4; // Scrollable
-    if (state == GameState::Shop) return 4; // Scrollable
+    if (state == GameState::Menu) return 4; // Scrollable (7 items total)
+    if (state == GameState::LevelSelect) return 4;
+    if (state == GameState::DifficultySelect) return 3;
+    if (state == GameState::Paused) return 3;
+    if (state == GameState::Controls) return 4;
+    if (state == GameState::CharacterSelect) return 4;
+    if (state == GameState::Shop) return 4;
     return kMaxVisibleItems;
 }
 
@@ -275,7 +321,7 @@ int MenuScreen::getTotalItems(GameState state, bool legendUnlocked, const std::v
     (void)legendUnlocked;
     (void)profileLevels;
 
-    if (state == GameState::Menu) return 6;
+    if (state == GameState::Menu) return 7;
     if (state == GameState::LevelSelect) return 4;
     if (state == GameState::DifficultySelect) return 3;
     if (state == GameState::Paused) return 3;

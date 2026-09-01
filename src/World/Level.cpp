@@ -67,6 +67,12 @@ void Level::spawnFromMap() {
     droppedItems.clear();
     tombstones.clear();
 
+    // Reset achievement tracking for new level
+    achievements.assign(4, false);
+    totalKills = 0;
+    levelStartedWithDamage = true;
+    bossDefeated = false;
+
     players.push_back(std::make_unique<Player>(1, playerSpawns[0], pendingProfiles[0]));
     if (activePlayerCount >= 2) {
         players.push_back(std::make_unique<Player>(2, playerSpawns[1], pendingProfiles[1]));
@@ -253,7 +259,25 @@ void Level::handleCheckpoints() {
 }
 
 void Level::eraseDeadObjects() {
+    int previousEnemyCount = enemies.size();
     enemies.erase(std::remove_if(enemies.begin(), enemies.end(), [](const auto& e) { return !e->isAlive(); }), enemies.end());
+    int killedCount = previousEnemyCount - enemies.size();
+
+    if (killedCount > 0) {
+        totalKills += killedCount;
+        checkAchievements();
+    }
+
+    // Check for boss defeat
+    for (const auto& enemy : enemies) {
+        if (auto boss = dynamic_cast<BossEnemy*>(enemy.get())) {
+            if (!boss->isAlive()) {
+                bossDefeated = true;
+                checkAchievements();
+            }
+        }
+    }
+
     projectiles.erase(std::remove_if(projectiles.begin(), projectiles.end(), [](const auto& p) { return !p->isAlive(); }), projectiles.end());
     droppedItems.erase(std::remove_if(droppedItems.begin(), droppedItems.end(), [](const auto& i) { return !i->isAlive(); }), droppedItems.end());
     tombstones.erase(std::remove_if(tombstones.begin(), tombstones.end(), [](const auto& t) { return !t->isAlive(); }), tombstones.end());
@@ -298,6 +322,55 @@ std::vector<std::unique_ptr<Enemy>>& Level::getEnemies() { return enemies; }
 std::vector<std::unique_ptr<Projectile>>& Level::getProjectiles() { return projectiles; }
 std::vector<std::unique_ptr<DroppedItem>>& Level::getDroppedItems() { return droppedItems; }
 std::vector<std::unique_ptr<Tombstone>>& Level::getTombstones() { return tombstones; }
+
+FairyCompanionManager& Level::getFairies() { return fairies; }
+const FairyCompanionManager& Level::getFairies() const { return fairies; }
+
+std::vector<bool> Level::getAchievements() const {
+    return achievements;
+}
+
+void Level::setAchievements(const std::vector<bool>& newAchievements) {
+    achievements = newAchievements;
+}
+
+void Level::resetAchievements() {
+    achievements.assign(4, false);
+    totalKills = 0;
+    levelStartedWithDamage = false;
+    bossDefeated = false;
+}
+
+void Level::checkAchievements() {
+    // Achievement 0: First kill
+    if (totalKills >= 1 && !achievements[0]) {
+        achievements[0] = true;
+    }
+
+    // Achievement 1: 5 kills
+    if (totalKills >= 5 && !achievements[1]) {
+        achievements[1] = true;
+    }
+
+    // Achievement 2: No damage run (no damage taken in level)
+    if (levelStartedWithDamage && !achievements[2]) {
+        bool anyPlayerDamaged = false;
+        for (const auto& player : players) {
+            if (player && player->getMaxHealth() > player->getHealth()) {
+                anyPlayerDamaged = true;
+                break;
+            }
+        }
+        if (!anyPlayerDamaged && hasWon()) {
+            achievements[2] = true;
+        }
+    }
+
+    // Achievement 3: Boss defeated
+    if (bossDefeated && !achievements[3]) {
+        achievements[3] = true;
+    }
+}
 
 void Level::drawMarkers(sf::RenderWindow& window, sf::Vector2f camera) const {
     for (const auto& spike : spikes) {

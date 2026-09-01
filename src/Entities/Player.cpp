@@ -1,11 +1,12 @@
-#include "Entities/Player.h"
 #include "Entities/DroppedItem.h"
+#include "Entities/Player.h"
 #include "Entities/Tombstone.h"
 #include "Utils/Constants.h"
 #include "World/Collision.h"
 #include "World/Level.h"
 
 #include <algorithm>
+#include <cstdint>
 
 namespace {
 float approach(float value, float target, float step) {
@@ -160,6 +161,14 @@ void Player::drawSprite(sf::RenderWindow& window, sf::Vector2f camera) const {
         position.x - camera.x + size.x * 0.5f,
         position.y - camera.y + size.y
     });
+
+    // Apply dodge fading effect
+    if (dodgeTimer > 0.0f) {
+        const float fadeAlpha = (dodgeTimer / Constants::PLAYER_DODGE_DURATION) * 150.0f;
+        const float finalAlpha = std::max(50.0f, fadeAlpha);
+        sprite.setColor(sf::Color(255, 255, 255, static_cast<uint8_t>(finalAlpha)));
+    }
+
     window.draw(sprite);
 }
 
