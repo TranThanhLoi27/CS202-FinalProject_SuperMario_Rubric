@@ -31,7 +31,7 @@ bool LevelLoader::load(const std::string& path,
             if(ch == '1') out.playerSpawns[0] = pos;
             if(ch == '2') out.playerSpawns[1] = pos;
             if(ch == 'P' || ch == 'R' || ch == 'B' || ch == 'F') out.enemySpawns.emplace_back(ch, pos);
-            if(ch == 'C') out.checkpoints.emplace_back(sf::FloatRect(pos, {Constants::TILE_SIZE, Constants::TILE_SIZE}));
+            if(ch == 'C') out.checkpoints.emplace_back(sf::FloatRect(pos, {Constants::TILE_SIZE, Constants::TILE_SIZE})); // Keep collision at 1 tile size
             if(ch == '^'){
                 out.spikes.emplace_back(
                     sf::FloatRect({pos.x, pos.y}, {Constants::TILE_SIZE, Constants::TILE_SIZE}),

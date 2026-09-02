@@ -257,9 +257,11 @@ void Level::handleSpikes() {
 void Level::handleCheckpoints() {
     for (auto& player : players) {
         if (player->isRespawning()) continue;
-        for (const auto& checkpoint : checkpoints) {
+        for (auto& checkpoint : checkpoints) {
             if (!MathUtils::intersects(player->getBounds(), checkpoint.bounds)) continue;
             player->setSpawn({checkpoint.bounds.position.x, checkpoint.bounds.position.y - player->size.y});
+            // Mark checkpoint as activated when player passes through it
+            checkpoint.activated = true;
         }
         for (const auto& goal : goals) {
             if (!MathUtils::intersects(player->getBounds(), goal.getBound())) continue;
@@ -390,10 +392,18 @@ void Level::drawMarkers(sf::RenderWindow& window, sf::Vector2f camera) const {
     for (const auto& goal : goals) {
         goal.render(window, camera);
     }
-    for (const auto& checkpoint : checkpoints) {
+    for (auto& checkpoint : checkpoints) {
         if (checkpointTexture) {
             sf::Sprite checkpointSprite(*checkpointTexture);
-            checkpointSprite.setPosition({checkpoint.bounds.position.x - camera.x, checkpoint.bounds.position.y - camera.y});
+            // Render checkpoint 32 pixels higher than collision position
+            checkpointSprite.setPosition({checkpoint.bounds.position.x - camera.x, checkpoint.bounds.position.y - 32.0f - camera.y});
+
+            // Frame 1 (0-96) when not activated, Frame 2 (96-192) when activated
+            const int frameWidth = 96;
+            const int frameHeight = 64;
+            const int frameIndex = checkpoint.activated ? 1 : 0;
+            checkpointSprite.setTextureRect(sf::IntRect({frameIndex * frameWidth, 0}, {frameWidth, frameHeight}));
+
             window.draw(checkpointSprite);
         } else {
             // Fallback to simple shapes if texture not loaded
