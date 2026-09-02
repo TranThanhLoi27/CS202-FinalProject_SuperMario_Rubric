@@ -106,6 +106,7 @@ public:
 
 private:
     void loadTexture();
+    void loadAudio();
     void registerCharacterSprites();
     void restart();
     void update(float dt);

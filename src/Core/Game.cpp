@@ -15,6 +15,7 @@
 #include <array>
 #include <optional>
 #include <stdexcept>
+#include <utility>
 
 namespace {
 struct LevelOption {
@@ -68,10 +69,14 @@ Game::Game()
     registerCharacterSprites();
     Tombstone::setTexture(assets.texture("tombstone"));
 
+    audio.setMasterVolume(70.0f);
+    loadAudio();
+    Player::setSoundCallback([this](const std::string& soundId) {
+        audio.play(soundId);
+    });
+
     profileLevels.assign(Player::profiles().size(), 0);
     level.loadDefault();
-    audio.setMasterVolume(70.0f);
-    audio.playMusic("assets/audio/background.ogg");
 
     // Initialize achievement tracking
     previousAchievements.resize(4, 0);
@@ -84,6 +89,26 @@ Game::Game()
 Game::~Game() {
     // Auto-save when closing the game
     saveGame();
+    Player::setSoundCallback({});
+}
+
+void Game::loadAudio() {
+    const std::array<std::pair<const char*, const char*>, 10> soundFiles = {{
+        {"attack_1", "assets/audio/attack_1.wav"},
+        {"attack_2", "assets/audio/attack_2.wav"},
+        {"click", "assets/audio/click.wav"},
+        {"game_over", "assets/audio/game_over.wav"},
+        {"jump", "assets/audio/jump.wav"},
+        {"place_block", "assets/audio/place_block.wav"},
+        {"victory", "assets/audio/victory.wav"},
+        {"eating_sound", "assets/audio/eating_sound.mp3"},
+        {"pick_up", "assets/audio/pick_up.mp3"},
+        {"drop_item", "assets/audio/drop_item.mp3"},
+    }};
+
+    for (const auto& [id, path] : soundFiles) {
+        audio.loadSound(id, path);
+    }
 }
 
 void Game::loadTexture(){
@@ -190,6 +215,9 @@ void Game::restart() {
         level.loadLevel("../" + path, p1, p2, playerCount, healthBonus);
     }
     camera = {};
+    audio.stop("victory");
+    audio.stop("game_over");
+    audio.playMusic("assets/audio/background.ogg", true);
     state = GameState::Playing;
 }
 
@@ -230,6 +258,8 @@ void Game::update(float dt) {
     }
     if (p1Input.menuBack &&
         (state == GameState::Victory || state == GameState::GameOver)) {
+        audio.stop("victory");
+        audio.stop("game_over");
         state = GameState::Menu;
     }
     if (p1Input.menuBack && state == GameState::Playing) {
@@ -277,8 +307,13 @@ void Game::update(float dt) {
         walletCoins += level.collectedCoins();
         unlockedLevelCount = std::max(unlockedLevelCount, std::min(static_cast<int>(LEVELS.size()), selectedLevel + 2));
         state = GameState::Victory;
+        audio.stopMusic();
+        audio.play("victory");
+    } else if (level.allDead()) {
+        state = GameState::GameOver;
+        audio.stopMusic();
+        audio.play("game_over");
     }
-    if (level.allDead()) state = GameState::GameOver;
 }
 
 void Game::updateMenu() {
@@ -302,6 +337,9 @@ void Game::updateMenu() {
                                                                  pauseMenuIndex, controlsPlayerIndex, controlsActionIndex);
     if (itemUnderMouse >= 0 && itemUnderMouse < 7) {
         menuIndex = itemUnderMouse;
+    }
+    if (input.mousePressed(sf::Mouse::Button::Left) && itemUnderMouse >= 0) {
+        audio.play("click");
     }
 
     if (state == GameState::Info) {
@@ -389,6 +427,7 @@ void Game::updatePaused() {
     }
 
     if (input.mousePressed(sf::Mouse::Button::Left) && itemUnderMouse >= 0 && itemUnderMouse < pauseItemCount) {
+        audio.play("click");
         pauseMenuIndex = itemUnderMouse;
         if (pauseMenuIndex == 0) state = GameState::Playing;
         else if (pauseMenuIndex == 1) {
@@ -399,6 +438,7 @@ void Game::updatePaused() {
             rebindWarning.clear();
             MenuScreen::setViewportOffset(0);
         } else if (pauseMenuIndex == 2) {
+            audio.stopMusic();
             state = GameState::Menu;
             MenuScreen::setViewportOffset(0);
         }
@@ -458,6 +498,10 @@ void Game::updateControls(float dt) {
     }
 
     if (input.mousePressed(sf::Mouse::Button::Left)) {
+        if (itemUnderMouse == -10 || itemUnderMouse == -11 ||
+            (itemUnderMouse >= 0 && itemUnderMouse < InputManager::ActionCount)) {
+            audio.play("click");
+        }
         if (itemUnderMouse == -10) {
             controlsPlayerIndex = 0;
             return;

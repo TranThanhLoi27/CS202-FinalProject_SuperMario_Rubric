@@ -24,8 +24,9 @@ constexpr float PLAYER_DODGE_COOLDOWN = 2.0f;
 
 constexpr int PLAYER_MAX_HEALTH = 10;
 constexpr int PLAYER_MAX_HUNGER = 100;
-constexpr float HUNGER_LOSS_PER_SECOND = 1.0f;
-constexpr float HUNGER_DAMAGE_INTERVAL = 1.0f;
+constexpr float HUNGER_DRAIN_RATE = 0.45f;
+constexpr float STARVATION_DAMAGE_RATE = 1.0f;
+constexpr float FOOD_HUNGER_RESTORE = 20.0f;
 
 constexpr int PATROL_ENEMY_HEALTH = 2;
 constexpr int SHOOTER_ENEMY_HEALTH = 3;
