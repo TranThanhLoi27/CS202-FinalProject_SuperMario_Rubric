@@ -4,7 +4,9 @@
 
 struct EnemyTextures {
     static void setTextures(const sf::Texture& patrol,
-                            const sf::Texture& shooter,
+                            const sf::Texture& shooterIdle,
+                            const sf::Texture& shooterAttack,
+                            const sf::Texture& shooterDie,
                             const sf::Texture& flyingIdle,
                             const sf::Texture& flyingHurt,
                             const sf::Texture& flyingDie,
@@ -16,7 +18,9 @@ struct EnemyTextures {
                             const sf::Texture& projectile);
 
     static const sf::Texture* patrol;
-    static const sf::Texture* shooter;
+    static const sf::Texture* shooterIdle;
+    static const sf::Texture* shooterAttack;
+    static const sf::Texture* shooterDie;
     static const sf::Texture* flyingIdle;
     static const sf::Texture* flyingHurt;
     static const sf::Texture* flyingDie;
