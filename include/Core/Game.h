@@ -8,6 +8,7 @@
 #include "Graphics/Animation.h"
 #include "UI/HUD.h"
 #include "UI/MenuScreen.h"
+#include "UI/SettingsScreen.h"
 #include "World/Level.h"
 
 #include <SFML/Graphics.hpp>
@@ -24,17 +25,15 @@ private:
     void registerCharacterSprites();
     void restart();
     void update(float dt);
-    void updateMenu();
-    void updatePaused();
-    void updateMapSelect();
-    void updateDifficultySelect();
-    void updateCharacterSelect();
-    void updateShop();
+    void updateUiHover();
+    void handleMouseClick(sf::Vector2f mousePosition);
+    void handleMenuClick(int buttonIndex);
+    void handleShopClick(int buttonIndex);
+    void openSettings(GameState returnState);
     void updateCamera(float dt);
     void render();
     Player::Profile upgradedProfile(int profileIndex) const;
     bool profileUnlocked(int profileIndex) const;
-    void moveProfileSelection(int player, int delta);
 
     sf::RenderWindow window;
     AssetManager assets;
@@ -44,6 +43,8 @@ private:
     Level level;
     HUD hud;
     MenuScreen menu;
+    SettingsScreen settings;
+    GameState settingsReturnState = GameState::Menu;
     sf::Vector2f camera;
     int menuIndex = 0;
     int selectedProfiles[2] = {0, 1};
