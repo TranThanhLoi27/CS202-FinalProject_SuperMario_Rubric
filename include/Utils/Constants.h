@@ -29,7 +29,30 @@ constexpr float HUNGER_DAMAGE_INTERVAL = 1.0f;
 
 constexpr int PATROL_ENEMY_HEALTH = 2;
 constexpr int SHOOTER_ENEMY_HEALTH = 3;
+constexpr int FLYING_ENEMY_HEALTH = 2;
 constexpr int BOSS_HEALTH = 20;
+
+constexpr float FLYING_ENEMY_SPEED = 72.0f;
+constexpr float FLYING_ENEMY_WAVE_AMPLITUDE = 42.0f;
+constexpr float FLYING_ENEMY_WAVE_FREQUENCY = 2.2f;
+constexpr float FLYING_ENEMY_AGGRO_RANGE = 400.0f;
+constexpr float FLYING_ENEMY_TRACK_RANGE = 150.0f;
+constexpr float FLYING_ENEMY_PATROL_RANGE = 128.0f;
+constexpr float FLYING_ENEMY_KNOCKBACK = 150.0f;
+constexpr float FLYING_ENEMY_HURT_TIME = 0.25f;
+constexpr float FLYING_ENEMY_DEATH_TIME = 1.0f;
+
+constexpr float BOSS_MOVE_SPEED = 42.0f;
+constexpr float BOSS_ENRAGED_SPEED_MULTIPLIER = 1.5f;
+constexpr float BOSS_ENRAGED_HEALTH_RATIO = 0.5f;
+constexpr float BOSS_TRACK_RANGE = 500.0f;
+constexpr float BOSS_PHASE_ONE_ATTACK_COOLDOWN = 1.35f;
+constexpr float BOSS_ENRAGED_ATTACK_COOLDOWN = 0.70f;
+constexpr float BOSS_PROJECTILE_SPEED = 400.0f;
+constexpr float BOSS_PROJECTILE_SPREAD_SPEED = 100.0f;
+constexpr float BOSS_SHOCKWAVE_SPEED = 520.0f;
+constexpr float BOSS_HURT_TIME = 0.30f;
+constexpr float BOSS_DEATH_TIME = 1.0f;
 
 constexpr int START_BLOCK_COUNT = 2;
 constexpr unsigned WINDOW_WIDTH = 1280;
