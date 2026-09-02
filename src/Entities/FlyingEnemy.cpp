@@ -1,14 +1,18 @@
 #include "Entities/FlyingEnemy.h"
-#include "Graphics/EnemySprites.h"
-#include "World/Level.h"
 #include "Entities/Player.h"
+#include "Graphics/EnemySprites.h"
+#include "Utils/Constants.h"
+#include "World/Collision.h"
+#include "World/Level.h"
 
 #include <cmath>
 
 FlyingEnemy::FlyingEnemy(sf::Vector2f position)
-    : Enemy(position + sf::Vector2f(0.0f, -32.0f), {64.0f, 64.0f}, 2, {96, 176, 88}),
-      origin(position + sf::Vector2f(0.0f, -64.0f)) {
-    this->position = origin;
+    : Enemy(position + sf::Vector2f(0.0f, -64.0f),
+            {64.0f, 64.0f},
+            Constants::FLYING_ENEMY_HEALTH,
+            {96, 176, 88}),
+      origin(this->position) {
     facingDirection = 1;
 }
 
@@ -28,43 +32,69 @@ void FlyingEnemy::update(float dt, Level& level) {
 
     if (hitTimer <= 0.0f) {
         Player* target = level.closestLivingPlayer(*this);
-        
-        // Track target only if within a reasonable distance, otherwise patrol origin
         bool movingToTarget = false;
-        if (target && std::abs(target->position.x - position.x) < 400.0f) {
-            if (target->position.x > position.x && position.x < origin.x + 150.0f) {
+
+        if (target &&
+            std::abs(target->position.x - position.x) <
+                Constants::FLYING_ENEMY_AGGRO_RANGE) {
+            if (target->position.x > position.x &&
+                position.x < origin.x + Constants::FLYING_ENEMY_TRACK_RANGE) {
                 facingDirection = 1;
                 movingToTarget = true;
-            } else if (target->position.x < position.x && position.x > origin.x - 150.0f) {
+            } else if (target->position.x < position.x &&
+                       position.x > origin.x - Constants::FLYING_ENEMY_TRACK_RANGE) {
                 facingDirection = -1;
                 movingToTarget = true;
             }
         }
-        
+
         if (!movingToTarget) {
-            if (position.x < origin.x - 128.0f) {
+            if (position.x < origin.x - Constants::FLYING_ENEMY_PATROL_RANGE) {
                 facingDirection = 1;
-            } else if (position.x > origin.x + 128.0f) {
+            } else if (position.x > origin.x + Constants::FLYING_ENEMY_PATROL_RANGE) {
                 facingDirection = -1;
             }
         }
 
-        velocity.x = static_cast<float>(facingDirection) * 72.0f;
-        position.x += velocity.x * dt;
-        position.y = origin.y + std::sin(waveTime * 2.2f) * 42.0f;
+        velocity.x = static_cast<float>(facingDirection) * Constants::FLYING_ENEMY_SPEED;
+    }
+
+    // Flying motion deliberately replaces gravity with a sinusoidal target.
+    const float targetY =
+        origin.y +
+        std::sin(waveTime * Constants::FLYING_ENEMY_WAVE_FREQUENCY) *
+            Constants::FLYING_ENEMY_WAVE_AMPLITUDE;
+    velocity.y = (targetY - position.y) / dt;
+
+    const float requestedHorizontalVelocity = velocity.x;
+    velocity *= dt;
+    Collision::resolveTileCollision(*this, level.getTileMap());
+    velocity /= dt;
+
+    const bool hitWall =
+        requestedHorizontalVelocity != 0.0f && velocity.x == 0.0f;
+    if (hitWall) {
+        facingDirection *= -1;
+        velocity.x = -requestedHorizontalVelocity;
     }
 }
 
 void FlyingEnemy::takeDamage(int damage, Level& level, const Player& source) {
-    if (isDying || hitTimer > 0.0f) return;
+    if (isDying || hitTimer > 0.0f) {
+        return;
+    }
+
     health -= damage;
-    hitTimer = 0.25f;
-    animTime = 0.0f; // Reset anim time for hurt animation
-    velocity.x += static_cast<float>(source.getFacingDirection()) * 150.0f; // Minor knockback for flying
+    hitTimer = Constants::FLYING_ENEMY_HURT_TIME;
+    animTime = 0.0f;
+    velocity.x = static_cast<float>(source.getFacingDirection()) *
+                 Constants::FLYING_ENEMY_KNOCKBACK;
+
     if (health <= 0) {
         isDying = true;
-        deathTimer = 1.0f; // 12 frames at ~12 fps
-        animTime = 0.0f; // Reset anim time for death animation
+        deathTimer = Constants::FLYING_ENEMY_DEATH_TIME;
+        velocity = {0.0f, 0.0f};
+        animTime = 0.0f;
         level.dropLoot(position + size * 0.5f);
     }
 }
