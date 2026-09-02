@@ -6,6 +6,7 @@
 #include "Graphics/Animator.h"
 #include "Graphics/CharacterSprites.h"
 
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -13,6 +14,8 @@ class Level;
 
 class Player : public Character {
 public:
+    using SoundCallback = std::function<void(const std::string&)>;
+
     struct Profile {
         std::string name;
         std::string skill;
@@ -32,7 +35,9 @@ public:
     void draw(sf::RenderWindow& window, sf::Vector2f camera) const override;
     void takeDamage(int damage, float knockback = 0.0f) override;
     void heal(int amount);
-    void restoreHunger(int amount);
+    void restoreHunger(float amount);
+    void recordPlacedBlock(int tileX, int tileY);
+    void playPickupSound() const;
     void die(Level& level, bool fell = false);
     bool isRespawning() const;
     bool isDodging() const;
@@ -53,6 +58,7 @@ public:
     int getSelectedSlot() const;
     float getActionTimer() const;
     void useSelectedItem(Level& level);
+    static void setSoundCallback(SoundCallback callback);
     static const std::vector<Profile>& profiles();
 
     sf::Color color;
@@ -68,9 +74,11 @@ private:
     float dodgeTimer = 0.0f;
     float dodgeCooldownTimer = 0.0f;
     float respawnTimer = 0.0f;
-    float hungerDamageTimer = 0.0f;
+    float starvationDamageAccumulator = 0.0f;
     float coyoteTimer = 0.0f;
     float jumpBufferTimer = 0.0f;
+
+    std::vector<sf::Vector2i> placedBlockTiles;
 
     Animator animator;
     const CharacterSpriteSet* sprites = nullptr;
@@ -81,6 +89,8 @@ private:
 
     Profile profile;
 
+    void playSound(const std::string& soundId) const;
+    bool tryReclaimPlacedBlock(Level& level);
     void updateAnimation(float dt);
     void drawSprite(sf::RenderWindow& window, sf::Vector2f camera) const;
 };

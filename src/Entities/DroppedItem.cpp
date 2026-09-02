@@ -58,9 +58,11 @@ void DroppedItem::draw(sf::RenderWindow& window, sf::Vector2f camera) const {
     }
     if (type == ItemType::Coin && coinTex) {
         sf::Sprite sprite(*coinTex);
-        const int frame = std::min(quantity - 1, Constants::COIN_FRAME_COUNT - 1);
-        sprite.setTextureRect(sf::IntRect({std::max(0, frame) * Constants::ITEM_ICON_SIZE, 0},
-                                          {Constants::ITEM_ICON_SIZE, Constants::ITEM_ICON_SIZE}));
+        const int frameWidth = coinTex->getSize().x / Constants::COIN_FRAME_COUNT;
+        const int frameHeight = coinTex->getSize().y;
+        const int frame = static_cast<int>(age * 10.0f) % Constants::COIN_FRAME_COUNT;
+        sprite.setTextureRect(sf::IntRect({frame * frameWidth, 0},
+                                          {frameWidth, frameHeight}));
         sprite.setPosition(drawPos);
         window.draw(sprite);
         return;

@@ -155,8 +155,9 @@ void drawInventorySlot(sf::RenderWindow& window, sf::Vector2f position, int slot
         window.draw(icon);
     } else if (slotIndex == COIN_SLOT_INDEX && coinTexPtr) {
         sf::Sprite icon(*coinTexPtr);
-        const int frame = count > 0 ? std::min(count - 1, Constants::COIN_FRAME_COUNT - 1) : 0;
-        icon.setTextureRect(sf::IntRect({frame * Constants::ITEM_ICON_SIZE, 0}, {Constants::ITEM_ICON_SIZE, Constants::ITEM_ICON_SIZE}));
+        const int frameWidth = coinTexPtr->getSize().x / Constants::COIN_FRAME_COUNT;
+        const int frameHeight = coinTexPtr->getSize().y;
+        icon.setTextureRect(sf::IntRect({0, 0}, {frameWidth, frameHeight}));
         icon.setScale({iconScale, iconScale});
         icon.setPosition(iconPos);
         window.draw(icon);

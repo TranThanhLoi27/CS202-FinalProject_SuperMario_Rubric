@@ -17,10 +17,10 @@ public:
               int selectedDifficulty, int walletCoins, int shopIndex, bool legendUnlocked,
               const std::vector<int>& profileLevels, int pauseMenuIndex, int controlsPlayerIndex,
               int controlsActionIndex, bool rebinding, const std::string& rebindWarning,
-              const InputManager& input) const;
+              const InputManager& input, int hoveredMenuItem) const;
 
     // Mouse interaction methods
-    static int getMenuItemUnderMouse(GameState state, sf::Vector2i mousePos, int menuIndex, int selectedLevel,
+    static int getMenuItemUnderMouse(GameState state, sf::Vector2f mousePos, int menuIndex, int selectedLevel,
                                      int unlockedLevelCount, int selectedDifficulty, int walletCoins, int shopIndex,
                                      bool legendUnlocked, const std::vector<int>& profileLevels, int pauseMenuIndex,
                                      int controlsPlayerIndex, int controlsActionIndex);
@@ -41,7 +41,8 @@ private:
                                     bool legendUnlocked, const std::vector<int>& profileLevels);
     static void drawPause(sf::RenderWindow& window, int pauseMenuIndex);
     static void drawControls(sf::RenderWindow& window, int controlsPlayerIndex, int controlsActionIndex,
-                             bool rebinding, const std::string& rebindWarning, const InputManager& input);
+                             bool rebinding, const std::string& rebindWarning, const InputManager& input,
+                             int hoveredMenuItem);
     static void drawSettingBar(sf::RenderWindow& window, const std::string& label, const std::string& value,
                                sf::Vector2f position, float ratio, sf::Color color);
 };

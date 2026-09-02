@@ -228,6 +228,7 @@ void Level::handlePickups() {
                 player->heal(item->getQuantity() * 2);
             }
             item->kill();
+            player->playPickupSound();
         }
         for (auto& tombstone : tombstones) {
             if (!tombstone->isAlive() || tombstone->getOwnerId() != player->getId() ||
@@ -237,6 +238,7 @@ void Level::handlePickups() {
                 if (owner->getId() == tombstone->getOwnerId()) owner->markTombstoneRecovered();
             }
             tombstone->kill();
+            player->playPickupSound();
         }
     }
 }
