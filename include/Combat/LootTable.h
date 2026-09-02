@@ -6,6 +6,7 @@
 // Helper class containing static logic for random loot generation
 class LootTable {
 public:
+    /// Selects an item type using the configured random loot probabilities.
     static ItemType roll();
 };
 

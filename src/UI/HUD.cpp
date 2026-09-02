@@ -20,6 +20,7 @@ const sf::Texture* solidTexPtr = nullptr;
 sf::Texture fallbackHeartTex;
 sf::Texture fallbackMeatTex;
 
+// Returns the registered heart texture or lazily loads the fallback texture.
 const sf::Texture& getHeartTexture() {
     if (heartTexPtr) return *heartTexPtr;
     if (fallbackHeartTex.getNativeHandle() == 0) {
@@ -28,6 +29,7 @@ const sf::Texture& getHeartTexture() {
     return fallbackHeartTex;
 }
 
+// Returns the registered meat texture or lazily loads the fallback texture.
 const sf::Texture& getMeatTexture() {
     if (meatTexPtr) return *meatTexPtr;
     if (fallbackMeatTex.getNativeHandle() == 0) {
@@ -125,6 +127,7 @@ void HUD::drawHungerBar(sf::RenderWindow& window, sf::Vector2f position, float h
 }
 
 namespace {
+// Draws one inventory slot, including its icon, count, selection, and cooldown.
 void drawInventorySlot(sf::RenderWindow& window, sf::Vector2f position, int slotIndex, int count,
                        bool selected, float actionTimer) {
     constexpr float slotSize = 24.0f;

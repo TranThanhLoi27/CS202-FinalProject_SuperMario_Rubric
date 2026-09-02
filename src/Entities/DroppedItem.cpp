@@ -14,6 +14,7 @@ const sf::Texture* foodTex = nullptr;
 const sf::Texture* coinTex = nullptr;
 const sf::Texture* solidTex = nullptr;
 
+// Produces a uniformly distributed value within the requested range.
 float randomFloat(float low, float high) {
     static std::mt19937 rng(std::random_device{}());
     std::uniform_real_distribution<float> dist(low, high);

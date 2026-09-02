@@ -1,4 +1,3 @@
-// Owns the window, game state, input, level, camera, and main loop.
 #pragma once
 
 #include "Core/AudioManager.h"
@@ -22,11 +21,13 @@ struct SaveData {
     std::vector<int> profileLevels;
     std::vector<char> achievements; // First kill, 5 kills, no damage run, boss defeated (char instead of bool for serialization)
 
+    /// Initializes fixed-size progression and achievement collections.
     SaveData() {
         profileLevels.resize(5, 0); // 5 characters
         achievements.resize(4, 0); // 4 achievements
     }
 
+    /// Serializes persistent progression to a binary file.
     void saveToFile(const std::string& filename = "data.txt") {
         std::ofstream file(filename, std::ios::binary);
         if (!file) return;
@@ -57,6 +58,7 @@ struct SaveData {
         }
     }
 
+    /// Loads persistent progression from a binary file after sanity checks.
     bool loadFromFile(const std::string& filename = "data.txt") {
         std::ifstream file(filename, std::ios::binary);
         if (!file) return false;
@@ -89,6 +91,7 @@ struct SaveData {
         }
     }
 
+    /// Restores all persistent progression fields to their initial values.
     void reset() {
         walletCoins = 0;
         unlockedLevelCount = 1;
@@ -98,31 +101,54 @@ struct SaveData {
     }
 };
 
+/// Facade that owns the window and coordinates all application subsystems.
 class Game {
 public:
+    /// Creates the window and initializes every application subsystem.
     Game();
+    /// Saves progression and disconnects non-owning event observers.
     ~Game();
+    /// Runs the event, update, audio, and render loop until the window closes.
     void run();
 
 private:
+    /// Loads and registers every required texture.
     void loadTexture();
+    /// Loads every optional sound effect used by the game.
     void loadAudio();
+    /// Builds and registers animation metadata for each character sprite set.
     void registerCharacterSprites();
+    /// Reloads the selected level and enters the Playing state.
     void restart();
+    /// Updates the active game state for one frame.
     void update(float dt);
+    /// Handles main-menu and submenu interaction.
     void updateMenu();
+    /// Handles pause-menu interaction.
     void updatePaused();
+    /// Handles key-binding selection and key capture.
     void updateControls(float dt);
+    /// Handles map selection and locked-level checks.
     void updateMapSelect();
+    /// Handles difficulty selection.
     void updateDifficultySelect();
+    /// Handles one-player or two-player profile selection.
     void updateCharacterSelect();
+    /// Handles upgrades, purchases, and shop navigation.
     void updateShop();
+    /// Returns the logical menu item beneath a world-space mouse position.
     int menuItemAt(sf::Vector2f mousePosition) const;
+    /// Returns the clicked menu item for the current frame, if any.
     int clickedMenuItem() const;
+    /// Updates the shared camera target and world clamping.
     void updateCamera(float dt);
+    /// Draws the world, HUD, menus, and transient notifications.
     void render();
+    /// Returns a profile with purchased upgrades applied.
     Player::Profile upgradedProfile(int profileIndex) const;
+    /// Reports whether the requested profile can currently be selected.
     bool profileUnlocked(int profileIndex) const;
+    /// Moves a player's profile index while skipping unavailable profiles.
     void moveProfileSelection(int player, int delta);
 
     sf::RenderWindow window;
@@ -164,7 +190,10 @@ private:
 
     SaveData saveData;
 
+    /// Copies runtime progression into SaveData and writes it to disk.
     void saveGame();
+    /// Restores saved progression or initializes safe defaults.
     void loadGame();
+    /// Clears saved and in-memory progression.
     void resetGame();
 };

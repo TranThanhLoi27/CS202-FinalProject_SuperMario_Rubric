@@ -79,3 +79,8 @@ void AudioManager::clear() {
     music.stop();
     buffers.clear();
 }
+
+// Handles a sound event received through the Observer interface.
+void AudioManager::onSoundRequested(const std::string& soundId) {
+    play(soundId);
+}

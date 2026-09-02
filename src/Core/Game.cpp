@@ -71,9 +71,7 @@ Game::Game()
 
     audio.setMasterVolume(70.0f);
     loadAudio();
-    Player::setSoundCallback([this](const std::string& soundId) {
-        audio.play(soundId);
-    });
+    Player::setSoundObserver(&audio);
 
     profileLevels.assign(Player::profiles().size(), 0);
     level.loadDefault();
@@ -89,6 +87,7 @@ Game::Game()
 Game::~Game() {
     // Auto-save when closing the game
     saveGame();
+    Player::setSoundObserver(nullptr);
     Player::setSoundCallback({});
 }
 
@@ -118,8 +117,8 @@ void Game::loadTexture(){
     assets.LoadTexture("coin", "assets/textures/coin.png");
     assets.LoadTexture("rush", "assets/textures/rush.png");
     if (!assets.LoadTexture("background", "assets/textures/background.png") ||
-        !assets.LoadTexture("selector2", "assets/textures/selector1.png") ||
-        !assets.LoadTexture("selector1", "assets/textures/selector2.png") ||
+        !assets.LoadTexture("selector1", "assets/textures/selector1.png") ||
+        !assets.LoadTexture("selector2", "assets/textures/selector2.png") ||
         !assets.LoadTexture("fairy", "assets/textures/fairy.png") ||
         !assets.LoadTexture("solid", "assets/textures/solid.png") ||
         !assets.LoadTexture("goal", "assets/textures/goal.png") ||

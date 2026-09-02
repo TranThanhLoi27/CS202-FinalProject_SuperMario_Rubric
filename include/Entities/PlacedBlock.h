@@ -9,13 +9,14 @@ private:
     sf::FloatRect bounds;
 
 public:
-    // Initializes block at specific position
+    /// Initializes a block at the requested world position.
     PlacedBlock(const sf::Vector2f& position);
+    /// Destroys the block using normal value semantics.
     ~PlacedBlock() = default;
 
-    // Renders block to window
+    /// Draws the block using its rectangle shape.
     void draw(sf::RenderWindow& window) const;
 
-    // Returns collision bounds
+    /// Returns the collision bounds of the placed block.
     sf::FloatRect getBounds() const { return bounds; }
 };

@@ -4,6 +4,7 @@
 #include <algorithm>
 
 namespace {
+// Returns the zero-based inventory slot selected by a pressed number key.
 int pressedDigitSlot() {
     static const sf::Keyboard::Key keys[] = {
         sf::Keyboard::Key::Num1, sf::Keyboard::Key::Num2, sf::Keyboard::Key::Num3,

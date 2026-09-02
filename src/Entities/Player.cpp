@@ -1,6 +1,7 @@
 #include "Entities/DroppedItem.h"
 #include "Entities/Player.h"
 #include "Entities/Tombstone.h"
+#include "Core/SoundObserver.h"
 #include "Utils/Constants.h"
 #include "World/Collision.h"
 #include "World/Level.h"
@@ -12,10 +13,17 @@
 
 namespace {
 Player::SoundCallback playerSoundCallback;
+SoundObserver* playerSoundObserver = nullptr;
 
+// Moves a scalar toward a target without overshooting it.
 float approach(float value, float target, float step) {
     return value < target ? std::min(value + step, target) : std::max(value - step, target);
 }
+}
+
+// Registers the non-owning observer that receives gameplay sound requests.
+void Player::setSoundObserver(SoundObserver* observer) {
+    playerSoundObserver = observer;
 }
 
 void Player::setSoundCallback(SoundCallback callback) {
@@ -23,7 +31,11 @@ void Player::setSoundCallback(SoundCallback callback) {
 }
 
 void Player::playSound(const std::string& soundId) const {
-    if (playerSoundCallback) playerSoundCallback(soundId);
+    if (playerSoundObserver) {
+        playerSoundObserver->onSoundRequested(soundId);
+    } else if (playerSoundCallback) {
+        playerSoundCallback(soundId);
+    }
 }
 
 void Player::playPickupSound() const {

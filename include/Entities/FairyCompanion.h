@@ -27,11 +27,16 @@ struct Fairy {
 
 class FairyCompanionManager {
 public:
+    /// Registers the shared fairy texture owned by AssetManager.
     static void setTexture(const sf::Texture& texture);
 
+    /// Creates the companion groups required for the active player count.
     void initForPlayers(std::size_t playerCount);
+    /// Updates orbiting fairies and expires trail particles.
     void update(float dt, const std::vector<std::unique_ptr<Player>>& players);
+    /// Draws fairies and particles relative to the active camera.
     void draw(sf::RenderWindow& window, sf::Vector2f camera) const;
+    /// Spawns a radial burst of decorative fairy particles.
     void createFireworks(sf::Vector2f position, int count = 10);
 
 private:

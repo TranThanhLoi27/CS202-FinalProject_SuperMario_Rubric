@@ -10,6 +10,7 @@
 
 class LevelLoader{
 public:
+    /// Parses a text map into value-only level data and textured marker objects.
     bool load(const std::string& path,
               LevelData& out,
               const sf::Texture& spikeTexture,

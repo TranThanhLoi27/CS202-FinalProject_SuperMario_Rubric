@@ -5,7 +5,9 @@
 
 class Checkpoint {
 public:
+    /// Creates an inactive checkpoint with empty bounds.
     Checkpoint() = default;
+    /// Creates an inactive checkpoint for a world-space trigger region.
     explicit Checkpoint(sf::FloatRect bounds);
     sf::FloatRect bounds;
     bool active = false;

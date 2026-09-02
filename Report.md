@@ -377,15 +377,18 @@ Mức đóng gói chưa tuyệt đối: `Entity::position`, `size`, `velocity`, 
 
 ### 3.4. Mẫu thiết kế và kỹ thuật kiến trúc
 
-Đối chiếu với yêu cầu “ít nhất 5 design patterns” trong đề bài chuẩn, project có thể xác định sáu pattern/kỹ thuật kiến trúc có vai trò pattern rõ ràng:
+Đối chiếu với yêu cầu “ít nhất 5 design patterns” trong đề bài chuẩn, project có năm pattern chính được triển khai rõ ràng và hai pattern hỗ trợ:
 
-- **1. State / Finite State Machine:** `GameState` điều khiển luồng Menu/Playing/Paused/Victory; `BossEnemy::Phase` điều khiển Phase One/Enraged.
-- **2. Simple Factory:** `Level::spawnFromMap` nhận ký hiệu `P/R/F/B` và tập trung việc tạo đúng subclass enemy bằng `std::make_unique`, thay vì để client gameplay tự chọn constructor.
-- **3. Command / Action Mapping:** `InputManager::Action` tách action gameplay khỏi phím vật lý. Implementation hiện dùng hai mảng binding 16 phần tử; alias `ActionBindings` bằng `unordered_map` đã được khai báo nhưng chưa được sử dụng làm storage chính.
-- **4. Registry:** `CharacterSprites` dùng `unordered_map<string, CharacterSpriteSet>` để đăng ký và tra sprite set theo `spriteId`.
-- **5. Facade / Manager:** `Game` cung cấp điểm điều phối cấp ứng dụng; `Level` che giấu trình tự update actor, damage, pickup, hazard và cleanup; `AudioManager`/`AssetManager` cung cấp API tài nguyên tập trung.
-- **6. Observer-like Callback:** Player phát SFX thông qua `SoundCallback`, tránh phụ thuộc trực tiếp vào `AudioManager`. Đây là callback một subscriber, nhẹ hơn một Observer tổng quát nhưng vẫn thực hiện mục tiêu đảo chiều dependency.
+- **1. Simple Factory (Creational):** `EnemyFactory::create` ánh xạ ký hiệu map `P/R/F/B` thành `unique_ptr<Enemy>` của đúng subclass. `Level::spawnFromMap` chỉ đóng vai trò client, nhận product qua interface `Enemy` và không còn tự chọn concrete constructor.
+- **2. Observer (Behavioral):** `SoundObserver` là observer interface, `AudioManager` là concrete observer, còn `Player` phát yêu cầu SFX bằng logical ID. `Game` đăng ký observer khi khởi tạo và ngắt observer khi hủy; callback cũ được giữ làm compatibility fallback.
+- **3. State / Finite State Machine (Behavioral):** `GameState` điều khiển luồng Menu/Playing/Paused/Victory; `BossEnemy::Phase` điều khiển Phase One/Enraged cùng transition, tốc độ, cooldown và attack pattern riêng.
+- **4. Facade (Structural):** `Game` cung cấp facade cấp ứng dụng cho window/input/audio/assets/persistence; `Level` cung cấp facade gameplay cho actor, combat, pickup, hazard, checkpoint, achievement và cleanup.
+- **5. Flyweight (Structural):** `AssetManager` chỉ giữ một `sf::Texture`/`sf::Font` cho mỗi key và trả về const reference. Entity/UI dùng chung resource nội tại, trong khi vị trí, frame, hướng và scale là trạng thái ngoại tại riêng.
+- **6. Registry (hỗ trợ):** `CharacterSprites` dùng `unordered_map<string, CharacterSpriteSet>` để đăng ký và tra sprite set theo `spriteId`.
+- **7. Command / Action Mapping (hỗ trợ):** `InputManager::Action` tách action gameplay khỏi phím vật lý và cho phép rebind. Implementation hiện dùng hai bảng binding cố định 16 phần tử; alias `ActionBindings` mô tả dạng `unordered_map<Action, Key>` tương đương.
 - **RAII:** Texture, font, buffer, music và container đều có owner rõ ràng; entity động dùng `unique_ptr` và được xóa bằng erase-remove.
+
+Bằng chứng từng participant, call site và sơ đồ quan hệ được trình bày trong `DESIGN_PATTERNS.md`. Hai refactor Factory và Observer chỉ thay đổi cách tổ chức dependency, không thay đổi luật gameplay.
 
 `AssetManager` và `AudioManager` không phải Singleton. Chúng là object thành viên của `Game`, giúp lifetime rõ ràng và thuận lợi hơn cho test hoặc thay thế implementation.
 
@@ -445,7 +448,7 @@ Rubric chức năng phân bổ trọng tâm cho input/movement/collision, enemy,
 | 3 level completion | Có 3 level thường và 1 Boss Lair, tổng cộng 4 file level. | **Vượt baseline: 4/3 level** |
 | Sound effects và background | 10 SFX theo event và 1 background track dạng streaming/loop. | **Vượt baseline** |
 | Bốn tính chất OOP | Entity/Character/Enemy hierarchy, virtual dispatch, protected/private state, pure virtual interface. | **Đạt**; transform của `Entity` vẫn public. |
-| Ít nhất 5 patterns | State, Simple Factory, Command/Action Mapping, Registry, Facade/Manager và callback kiểu Observer. | **Đạt về kiến trúc**; nên trình bày rõ code evidence khi bảo vệ. |
+| Ít nhất 5 patterns | Simple Factory, Observer, State/FSM, Facade và Flyweight; Registry cùng Command/Action Mapping là pattern hỗ trợ. | **Đạt**; participant và call site được liệt kê trong `DESIGN_PATTERNS.md`. |
 | Game state management | 11 `GameState`: Menu, Info, LevelSelect, DifficultySelect, Shop, CharacterSelect, Controls, Playing, Paused, GameOver, Victory. | **Vượt baseline** |
 | Player progress | Wallet coin, level unlock, profile upgrade, Legend unlock và achievement. | **Vượt baseline** |
 | Save/load file | Binary `data.txt`, tự load khi khởi động và save khi đóng game. | **Đạt** |
@@ -454,7 +457,7 @@ Rubric chức năng phân bổ trọng tâm cho input/movement/collision, enemy,
 | Multiple players | Local co-op đồng thời 2 player, camera chung, giới hạn khoảng cách và inventory riêng. | **Vượt yêu cầu advanced** |
 | Level editor bonus | Level được data-driven bằng text nhưng chưa có editor cho người chơi tạo/lưu map. | **Chưa làm bonus** |
 | 3D bonus | Project chủ đích là 2D SFML. | **Không làm bonus 3D** |
-| Documentation | `Report.md` có class diagram, flow diagram, mô tả OOP/pattern và plan-vs-actual. | **Đạt phần tài liệu**; demo video không có trong repository. |
+| Documentation | `Report.md` có class diagram, flow diagram, mô tả OOP/pattern và plan-vs-actual; `DESIGN_PATTERNS.md` cung cấp code evidence riêng. | **Đạt phần tài liệu**; demo video không có trong repository. |
 
 ### 4.3. Các tính năng mở rộng hoặc làm sâu baseline
 

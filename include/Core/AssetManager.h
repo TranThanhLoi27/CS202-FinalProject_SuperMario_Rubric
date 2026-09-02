@@ -5,17 +5,18 @@
 #include <map>
 #include <string>
 
+/// Flyweight-style resource cache that shares one texture or font per identifier.
 class AssetManager{
 public:
-    //load texture 
+    /// Loads a texture from disk and stores it under a logical identifier.
     bool LoadTexture(const std::string& id, const std::string& path);
-    //load font
+    /// Loads a font from disk and stores it under a logical identifier.
     bool LoadFont(const std::string& id, const std::string& path);
-    //return pointer texture
+    /// Returns the shared texture registered under the requested identifier.
     const sf::Texture& texture(const std::string& id) const;
-    //return pointer font
+    /// Returns the shared font registered under the requested identifier.
     const sf::Font& font(const std::string& id) const;
-    //clear textures & fonts
+    /// Releases every cached texture and font.
     void Clear();
 private:
     std::map<std::string, sf::Texture> textures;

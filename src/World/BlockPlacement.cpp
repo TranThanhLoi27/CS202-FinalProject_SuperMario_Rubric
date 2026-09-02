@@ -13,10 +13,12 @@
 #include <cmath>
 
 namespace {
+// Converts one world-space coordinate into its tile-grid coordinate.
 int tileAt(float worldCoordinate) {
     return static_cast<int>(std::floor(worldCoordinate / Constants::TILE_SIZE));
 }
 
+// Builds the world-space rectangle occupied by one tile coordinate.
 sf::FloatRect tileRect(int tx, int ty) {
     return {
         {static_cast<float>(tx * Constants::TILE_SIZE), static_cast<float>(ty * Constants::TILE_SIZE)},
@@ -24,6 +26,7 @@ sf::FloatRect tileRect(int tx, int ty) {
     };
 }
 
+// Reports whether a proposed block overlaps any dynamic gameplay object.
 bool overlapsAnyObject(
     const sf::FloatRect& blockRect,
     const std::vector<std::unique_ptr<Player>>& players,

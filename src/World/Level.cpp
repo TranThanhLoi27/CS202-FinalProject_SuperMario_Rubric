@@ -2,9 +2,7 @@
 
 #include "Combat/DamageSystem.h"
 #include "Entities/BossEnemy.h"
-#include "Entities/FlyingEnemy.h"
-#include "Entities/PatrolEnemy.h"
-#include "Entities/ShooterEnemy.h"
+#include "Entities/EnemyFactory.h"
 #include "Utils/Constants.h"
 #include "Utils/MathUtils.h"
 #include "World/BlockPlacement.h"
@@ -83,11 +81,10 @@ void Level::spawnFromMap() {
     }
 
     for (const auto& spawn : enemySpawns) {
-        if (spawn.first == 'P') enemies.push_back(std::make_unique<PatrolEnemy>(spawn.second));
-        if (spawn.first == 'R') enemies.push_back(std::make_unique<ShooterEnemy>(spawn.second));
-        if (spawn.first == 'F') enemies.push_back(std::make_unique<FlyingEnemy>(spawn.second));
-        if (spawn.first == 'B') enemies.push_back(std::make_unique<BossEnemy>(spawn.second + sf::Vector2f(0.0f, -46.0f)));
-        if (!enemies.empty()) enemies.back()->addMaxHealth(pendingEnemyHealthBonus);
+        auto enemy = EnemyFactory::create(spawn.first, spawn.second);
+        if (!enemy) continue;
+        enemy->addMaxHealth(pendingEnemyHealthBonus);
+        enemies.push_back(std::move(enemy));
     }
     fairies.initForPlayers(players.size());
 }

@@ -3,6 +3,7 @@
 #include <SFML/Graphics/Texture.hpp>
 
 struct EnemyTextures {
+    /// Registers all shared enemy textures while AssetManager retains ownership.
     static void setTextures(const sf::Texture& patrol,
                             const sf::Texture& shooterIdle,
                             const sf::Texture& shooterAttack,

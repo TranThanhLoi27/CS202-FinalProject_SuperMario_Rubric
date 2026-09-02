@@ -12,6 +12,7 @@ class Tombstone;
 
 class BlockPlacement {
 public:
+    /// Places a block in the first valid tile ahead without overlapping gameplay objects.
     static bool tryPlaceBlock(
         Player& player,
         TileMap& map,

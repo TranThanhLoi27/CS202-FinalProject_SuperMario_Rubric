@@ -17,10 +17,42 @@ constexpr float kDisplayHeight = kFrameHeight * kSelectorScaleY;
 constexpr float kCenterX = (static_cast<float>(Constants::WINDOW_WIDTH) - kDisplayWidth) * 0.5f;
 constexpr float kScreenCenterX = static_cast<float>(Constants::WINDOW_WIDTH) * 0.5f;
 constexpr float kRowSpacing = 130.0f;
+constexpr float kControlsTabWidth = 260.0f;
+constexpr float kControlsTabHeight = 44.0f;
+constexpr float kControlsTabGap = 30.0f;
+constexpr float kControlsTabY = 18.0f;
 
 int viewportOffset = 0; // Which item is at the top of the viewport
 constexpr int kMaxVisibleItems = 4; // Maximum items visible at once (for scrollable menus)
 
+// Returns the horizontal origin of the Player 1 controls tab.
+float controlsPlayerOneTabX() {
+    return kScreenCenterX - kControlsTabWidth - kControlsTabGap * 0.5f;
+}
+
+// Returns the horizontal origin of the Player 2 controls tab.
+float controlsPlayerTwoTabX() {
+    return kScreenCenterX + kControlsTabGap * 0.5f;
+}
+
+// Draws one textured selector tab, including its highlighted state.
+void drawSelector(sf::RenderWindow& window, sf::Vector2f position, sf::Vector2f size, bool highlighted) {
+    const sf::Texture* texture = highlighted ? selector1Texture : selector2Texture;
+    if (!texture) return;
+
+    const sf::Vector2u textureSize = texture->getSize();
+    if (textureSize.x == 0 || textureSize.y == 0) return;
+
+    sf::Sprite selector(*texture);
+    selector.setPosition(position);
+    selector.setScale({
+        size.x / static_cast<float>(textureSize.x),
+        size.y / static_cast<float>(textureSize.y)
+    });
+    window.draw(selector);
+}
+
+// Draws dots that communicate the current page of a scrollable menu.
 void drawScrollDots(sf::RenderWindow& window, int totalItems, int maxVisible, int currentOffset, float y) {
     if (totalItems <= maxVisible) return;
 
@@ -40,8 +72,9 @@ void drawScrollDots(sf::RenderWindow& window, int totalItems, int maxVisible, in
 }
 }
 
+// Draws one centered menu row with active-item emphasis.
 void row(sf::RenderWindow& window, const std::string& text, float y, bool active, sf::Color color = sf::Color::White) {
-    const sf::Texture* texture = active ? selector2Texture : selector1Texture;
+    const sf::Texture* texture = active ? selector1Texture : selector2Texture;
     if (texture) {
         sf::Sprite selector(*texture);
         selector.setScale({kSelectorScaleX, kSelectorScaleY});
@@ -206,31 +239,25 @@ void MenuScreen::drawPause(sf::RenderWindow& window, int pauseMenuIndex) {
 void MenuScreen::drawControls(sf::RenderWindow& window, int controlsPlayerIndex, int controlsActionIndex,
                               bool rebinding, const std::string& rebindWarning, const InputManager& input,
                               int hoveredMenuItem) {
-    const float tabWidth = 260.0f;
-    const float tabHeight = 44.0f;
-    const float p1TabX = kScreenCenterX - tabWidth - 15.0f;
-    const float p2TabX = kScreenCenterX + 15.0f;
-    const float tabY = 18.0f;
+    const float p1TabX = controlsPlayerOneTabX();
+    const float p2TabX = controlsPlayerTwoTabX();
+    const sf::Vector2f tabSize{kControlsTabWidth, kControlsTabHeight};
+    const bool p1Highlighted = controlsPlayerIndex == 0 || hoveredMenuItem == -10;
+    const bool p2Highlighted = controlsPlayerIndex == 1 || hoveredMenuItem == -11;
 
-    // Draw Player 1 Tab Selector
-    sf::RectangleShape p1Box({tabWidth, tabHeight});
-    p1Box.setPosition({p1TabX, tabY});
-    p1Box.setFillColor(controlsPlayerIndex == 0 ? sf::Color(246, 233, 190) : sf::Color(34, 43, 48));
-    p1Box.setOutlineThickness(2.0f);
-    p1Box.setOutlineColor(controlsPlayerIndex == 0 ? sf::Color(255, 255, 255) : sf::Color(80, 80, 80));
-    window.draw(p1Box);
-    HUD::drawTextCentered(window, "Player 1 Controls", {p1TabX + tabWidth * 0.5f, tabY + tabHeight * 0.5f}, 21,
-                          controlsPlayerIndex == 0 ? sf::Color(20, 25, 27) : sf::Color(204, 213, 210));
+    const float textCenterY = kControlsTabY + kControlsTabHeight * 0.5f + 4.0f;
 
-    // Draw Player 2 Tab Selector
-    sf::RectangleShape p2Box({tabWidth, tabHeight});
-    p2Box.setPosition({p2TabX, tabY});
-    p2Box.setFillColor(controlsPlayerIndex == 1 ? sf::Color(246, 233, 190) : sf::Color(34, 43, 48));
-    p2Box.setOutlineThickness(2.0f);
-    p2Box.setOutlineColor(controlsPlayerIndex == 1 ? sf::Color(255, 255, 255) : sf::Color(80, 80, 80));
-    window.draw(p2Box);
-    HUD::drawTextCentered(window, "Player 2 Controls", {p2TabX + tabWidth * 0.5f, tabY + tabHeight * 0.5f}, 21,
-                          controlsPlayerIndex == 1 ? sf::Color(20, 25, 27) : sf::Color(204, 213, 210));
+drawSelector(window, {p1TabX, kControlsTabY}, tabSize, p1Highlighted);
+    HUD::drawTextCentered(
+        window, "Player 1 Controls",
+        {p1TabX + kControlsTabWidth * 0.5f, textCenterY},
+        16, p1Highlighted ? sf::Color::White : sf::Color(204, 213, 210));
+
+    drawSelector(window, {p2TabX, kControlsTabY}, tabSize, p2Highlighted);
+    HUD::drawTextCentered(
+        window, "Player 2 Controls",
+        {p2TabX + kControlsTabWidth * 0.5f, textCenterY},
+        16, p2Highlighted ? sf::Color::White : sf::Color(204, 213, 210));
 
     const int maxVisible = getMaxVisibleItems(GameState::Controls);
     const int totalItems = static_cast<int>(InputManager::ActionCount) + 1;
@@ -279,15 +306,12 @@ int MenuScreen::getMenuItemUnderMouse(GameState state, sf::Vector2f mousePos, in
     const float mouseY = mousePos.y;
 
     if (state == GameState::Controls) {
-        const float tabWidth = 260.0f;
-        const float tabHeight = 44.0f;
-        const float p1TabX = kScreenCenterX - tabWidth - 15.0f;
-        const float p2TabX = kScreenCenterX + 15.0f;
-        const float tabY = 18.0f;
+        const float p1TabX = controlsPlayerOneTabX();
+        const float p2TabX = controlsPlayerTwoTabX();
 
-        if (mouseY >= tabY && mouseY <= tabY + tabHeight) {
-            if (mouseX >= p1TabX && mouseX <= p1TabX + tabWidth) return -10; // Player 1 tab
-            if (mouseX >= p2TabX && mouseX <= p2TabX + tabWidth) return -11; // Player 2 tab
+        if (mouseY >= kControlsTabY && mouseY <= kControlsTabY + kControlsTabHeight) {
+            if (mouseX >= p1TabX && mouseX <= p1TabX + kControlsTabWidth) return -10; // Player 1 tab
+            if (mouseX >= p2TabX && mouseX <= p2TabX + kControlsTabWidth) return -11; // Player 2 tab
         }
     }
 

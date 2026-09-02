@@ -9,6 +9,7 @@
 #include <cmath>
 
 namespace {
+// Probes immediately below an entity to preserve a stable grounded state.
 bool touchesGround(const Entity& entity, const TileMap& map) {
     constexpr float groundProbe = 2.0f;
     const float feetY = entity.position.y + entity.size.y;

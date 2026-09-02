@@ -11,19 +11,20 @@ private:
     sf::Vector2f targetPos;
 
 public:
-    // Constructor setting start position
+    /// Creates the legacy ranged-enemy prototype at a starting position.
     RangedEnemy(const sf::Vector2f& startPosition);
+    /// Enables safe destruction through the ranged-enemy type.
     virtual ~RangedEnemy() = default;
 
-    // Updates shoot timer, spawns projectiles, and updates active projectiles
+    /// Updates the legacy shoot timer and its locally owned projectiles.
     void update(float dt) override;
     
-    // Draws enemy shape and active projectiles
+    /// Draws the legacy enemy and its locally owned projectiles.
     void draw(sf::RenderWindow& window) override;
 
-    // Updates target position (e.g. Player position) for aiming
+    /// Updates the world position used for aiming.
     void setTargetPosition(const sf::Vector2f& target) { targetPos = target; }
     
-    // Returns active projectiles vector
+    /// Returns mutable access to legacy locally owned projectiles.
     std::vector<Projectile>& getProjectiles() { return projectiles; }
 };
