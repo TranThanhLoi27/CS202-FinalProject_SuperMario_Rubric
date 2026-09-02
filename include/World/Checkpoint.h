@@ -9,4 +9,5 @@ public:
     explicit Checkpoint(sf::FloatRect bounds);
     sf::FloatRect bounds;
     bool active = false;
+    bool activated = false; // True when player has passed through it once
 };

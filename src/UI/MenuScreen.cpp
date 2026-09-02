@@ -16,7 +16,7 @@ constexpr float kDisplayWidth = kFrameWidth * kSelectorScaleX;
 constexpr float kDisplayHeight = kFrameHeight * kSelectorScaleY;
 constexpr float kCenterX = (static_cast<float>(Constants::WINDOW_WIDTH) - kDisplayWidth) * 0.5f;
 constexpr float kScreenCenterX = static_cast<float>(Constants::WINDOW_WIDTH) * 0.5f;
-constexpr float kRowSpacing = 115.0f;
+constexpr float kRowSpacing = 130.0f;
 
 int viewportOffset = 0; // Which item is at the top of the viewport
 constexpr int kMaxVisibleItems = 4; // Maximum items visible at once (for scrollable menus)
@@ -84,8 +84,8 @@ void MenuScreen::draw(sf::RenderWindow& window, GameState state, int menuIndex, 
         for (int i = viewportOffset; i < endItem; ++i) {
             row(window, entries[i], 75.0f + kRowSpacing * (i - viewportOffset), i == hoveredMenuItem);
         }
-        HUD::drawTextCentered(window, "Up/Down / Scroll: choose   Enter/Click: confirm", {kScreenCenterX, 565.0f}, 20, {204, 213, 210});
-        drawScrollDots(window, totalItems, maxVisible, viewportOffset, 595.0f);
+        HUD::drawTextCentered(window, "Up/Down / Scroll: choose   Enter/Click: confirm", {kScreenCenterX, 600.0f}, 20, {204, 213, 210});
+        drawScrollDots(window, totalItems, maxVisible, viewportOffset, 575.0f);
         return;
     }
     if (state == GameState::LevelSelect) {
@@ -163,7 +163,7 @@ void MenuScreen::draw(sf::RenderWindow& window, GameState state, int menuIndex, 
                 row(window, "Back", 68.0f + kRowSpacing * (i - viewportOffset), i == hoveredMenuItem);
             }
         }
-        drawScrollDots(window, totalItems, maxVisible, viewportOffset, 560.0f);
+        drawScrollDots(window, totalItems, maxVisible, viewportOffset, 580.0f);
         return;
     }
     if (state == GameState::Paused) {

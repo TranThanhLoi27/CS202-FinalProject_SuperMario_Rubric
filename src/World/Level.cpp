@@ -19,12 +19,14 @@
 const sf::Texture* Level::solidTexture = nullptr;
 const sf::Texture* Level::goalTexture = nullptr;
 const sf::Texture* Level::spikeTexture = nullptr;
+const sf::Texture* Level::checkpointTexture = nullptr;
 const sf::Texture* Level::backgroundTexture = nullptr;
 
-void Level::setTextures(const sf::Texture& solid, const sf::Texture& goal, const sf::Texture& spike, const sf::Texture& fairy, const sf::Texture& background) {
+void Level::setTextures(const sf::Texture& solid, const sf::Texture& goal, const sf::Texture& spike, const sf::Texture& checkpoint, const sf::Texture& fairy, const sf::Texture& background) {
     solidTexture = &solid;
     goalTexture = &goal;
     spikeTexture = &spike;
+    checkpointTexture = &checkpoint;
     backgroundTexture = &background;
     FairyCompanionManager::setTexture(fairy);
 }
@@ -255,9 +257,11 @@ void Level::handleSpikes() {
 void Level::handleCheckpoints() {
     for (auto& player : players) {
         if (player->isRespawning()) continue;
-        for (const auto& checkpoint : checkpoints) {
+        for (auto& checkpoint : checkpoints) {
             if (!MathUtils::intersects(player->getBounds(), checkpoint.bounds)) continue;
             player->setSpawn({checkpoint.bounds.position.x, checkpoint.bounds.position.y - player->size.y});
+            // Mark checkpoint as activated when player passes through it
+            checkpoint.activated = true;
         }
         for (const auto& goal : goals) {
             if (!MathUtils::intersects(player->getBounds(), goal.getBound())) continue;
@@ -388,19 +392,34 @@ void Level::drawMarkers(sf::RenderWindow& window, sf::Vector2f camera) const {
     for (const auto& goal : goals) {
         goal.render(window, camera);
     }
-    for (const auto& checkpoint : checkpoints) {
-        sf::RectangleShape pole({5.0f, 60.0f});
-        pole.setFillColor({217, 198, 111});
-        pole.setPosition({checkpoint.bounds.position.x + 12.0f - camera.x, checkpoint.bounds.position.y - 28.0f - camera.y});
-        window.draw(pole);
+    for (auto& checkpoint : checkpoints) {
+        if (checkpointTexture) {
+            sf::Sprite checkpointSprite(*checkpointTexture);
+            // Render checkpoint 32 pixels higher than collision position
+            checkpointSprite.setPosition({checkpoint.bounds.position.x - camera.x, checkpoint.bounds.position.y - 32.0f - camera.y});
 
-        sf::ConvexShape flag(3);
-        const sf::Vector2f p(checkpoint.bounds.position.x + 17.0f - camera.x, checkpoint.bounds.position.y - 24.0f - camera.y);
-        flag.setPoint(0, p);
-        flag.setPoint(1, p + sf::Vector2f(28.0f, 9.0f));
-        flag.setPoint(2, p + sf::Vector2f(0.0f, 22.0f));
-        flag.setFillColor({114, 216, 168});
-        window.draw(flag);
+            // Frame 1 (0-96) when not activated, Frame 2 (96-192) when activated
+            const int frameWidth = 96;
+            const int frameHeight = 64;
+            const int frameIndex = checkpoint.activated ? 1 : 0;
+            checkpointSprite.setTextureRect(sf::IntRect({frameIndex * frameWidth, 0}, {frameWidth, frameHeight}));
+
+            window.draw(checkpointSprite);
+        } else {
+            // Fallback to simple shapes if texture not loaded
+            sf::RectangleShape pole({5.0f, 60.0f});
+            pole.setFillColor({217, 198, 111});
+            pole.setPosition({checkpoint.bounds.position.x + 12.0f - camera.x, checkpoint.bounds.position.y - 28.0f - camera.y});
+            window.draw(pole);
+
+            sf::ConvexShape flag(3);
+            const sf::Vector2f p(checkpoint.bounds.position.x + 17.0f - camera.x, checkpoint.bounds.position.y - 24.0f - camera.y);
+            flag.setPoint(0, p);
+            flag.setPoint(1, p + sf::Vector2f(28.0f, 9.0f));
+            flag.setPoint(2, p + sf::Vector2f(0.0f, 22.0f));
+            flag.setFillColor({114, 216, 168});
+            window.draw(flag);
+        }
     }
 }
 

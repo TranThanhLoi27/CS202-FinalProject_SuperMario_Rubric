@@ -34,6 +34,7 @@ public:
     static void setTextures(const sf::Texture& solid,
                             const sf::Texture& goal,
                             const sf::Texture& spike,
+                            const sf::Texture& checkpoint,
                             const sf::Texture& fairy,
                             const sf::Texture& background);
 
@@ -100,5 +101,6 @@ private:
     static const sf::Texture* solidTexture;
     static const sf::Texture* goalTexture;
     static const sf::Texture* spikeTexture;
+    static const sf::Texture* checkpointTexture;
     static const sf::Texture* backgroundTexture;
 };

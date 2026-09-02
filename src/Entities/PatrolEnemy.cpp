@@ -7,7 +7,7 @@
 #include <cmath>
 
 PatrolEnemy::PatrolEnemy(sf::Vector2f pos)
-    : Enemy(pos, {32.0f, 32.0f}, Constants::PATROL_ENEMY_HEALTH, {185, 104, 78}) {
+    : Enemy(pos, {48.0f, 48.0f}, Constants::PATROL_ENEMY_HEALTH, {185, 104, 78}) {
     facingDirection = -1;
 }
 
@@ -69,8 +69,8 @@ void PatrolEnemy::draw(sf::RenderWindow& window, sf::Vector2f camera) const {
 
         sprite.setTextureRect(sf::IntRect({frameIndex * 32, 0}, {32, 32}));
         sprite.setOrigin({16.0f, 0.0f});
-        sprite.setScale({facingDirection > 0 ? -1.0f : 1.0f, 1.0f});
-        sprite.setPosition({position.x - camera.x + 16.0f, position.y - camera.y});
+        sprite.setScale({facingDirection > 0 ? -1.5f : 1.5f, 1.5f}); // Scale 1.5x
+        sprite.setPosition({position.x - camera.x + 24.0f, position.y - camera.y});
         window.draw(sprite);
     } else {
         drawBody(window, camera);

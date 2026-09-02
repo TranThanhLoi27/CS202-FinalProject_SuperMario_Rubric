@@ -56,7 +56,7 @@ Game::Game()
     HUD::setFont(assets.font("roboto"));
     loadTexture();
     MenuScreen::setSelectorTextures(assets.texture("selector1"), assets.texture("selector2"));
-    Level::setTextures(assets.texture("solid"), assets.texture("goal"), assets.texture("spike"), assets.texture("fairy"), assets.texture("background"));
+    Level::setTextures(assets.texture("solid"), assets.texture("goal"), assets.texture("spike"), assets.texture("checkpoint"), assets.texture("fairy"), assets.texture("background"));
     HUD::setTextures(assets.texture("heart"), assets.texture("meat"), assets.texture("food"),
                       assets.texture("coin"), assets.texture("solid"));
     EnemyTextures::setTextures(assets.texture("patrol"),
@@ -124,6 +124,7 @@ void Game::loadTexture(){
         !assets.LoadTexture("solid", "assets/textures/solid.png") ||
         !assets.LoadTexture("goal", "assets/textures/goal.png") ||
         !assets.LoadTexture("spike", "assets/textures/spike.png") ||
+        !assets.LoadTexture("checkpoint", "assets/textures/checkpoint.png") ||
         !assets.LoadTexture("ori", "assets/textures/ori.png") ||
         (!assets.LoadTexture("patrol", "assets/textures/slime.png") && !assets.LoadTexture("patrol", "assets/textures/patrol.png")) ||
         (!assets.LoadTexture("shooterIdle", "assets/textures/mushroom/mushroom_idle.png") && !assets.LoadTexture("shooterIdle", "assets/textures/shooter.png")) ||
