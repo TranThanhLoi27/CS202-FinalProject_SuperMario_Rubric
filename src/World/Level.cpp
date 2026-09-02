@@ -19,12 +19,14 @@
 const sf::Texture* Level::solidTexture = nullptr;
 const sf::Texture* Level::goalTexture = nullptr;
 const sf::Texture* Level::spikeTexture = nullptr;
+const sf::Texture* Level::checkpointTexture = nullptr;
 const sf::Texture* Level::backgroundTexture = nullptr;
 
-void Level::setTextures(const sf::Texture& solid, const sf::Texture& goal, const sf::Texture& spike, const sf::Texture& fairy, const sf::Texture& background) {
+void Level::setTextures(const sf::Texture& solid, const sf::Texture& goal, const sf::Texture& spike, const sf::Texture& checkpoint, const sf::Texture& fairy, const sf::Texture& background) {
     solidTexture = &solid;
     goalTexture = &goal;
     spikeTexture = &spike;
+    checkpointTexture = &checkpoint;
     backgroundTexture = &background;
     FairyCompanionManager::setTexture(fairy);
 }
@@ -387,18 +389,25 @@ void Level::drawMarkers(sf::RenderWindow& window, sf::Vector2f camera) const {
         goal.render(window, camera);
     }
     for (const auto& checkpoint : checkpoints) {
-        sf::RectangleShape pole({5.0f, 60.0f});
-        pole.setFillColor({217, 198, 111});
-        pole.setPosition({checkpoint.bounds.position.x + 12.0f - camera.x, checkpoint.bounds.position.y - 28.0f - camera.y});
-        window.draw(pole);
+        if (checkpointTexture) {
+            sf::Sprite checkpointSprite(*checkpointTexture);
+            checkpointSprite.setPosition({checkpoint.bounds.position.x - camera.x, checkpoint.bounds.position.y - camera.y});
+            window.draw(checkpointSprite);
+        } else {
+            // Fallback to simple shapes if texture not loaded
+            sf::RectangleShape pole({5.0f, 60.0f});
+            pole.setFillColor({217, 198, 111});
+            pole.setPosition({checkpoint.bounds.position.x + 12.0f - camera.x, checkpoint.bounds.position.y - 28.0f - camera.y});
+            window.draw(pole);
 
-        sf::ConvexShape flag(3);
-        const sf::Vector2f p(checkpoint.bounds.position.x + 17.0f - camera.x, checkpoint.bounds.position.y - 24.0f - camera.y);
-        flag.setPoint(0, p);
-        flag.setPoint(1, p + sf::Vector2f(28.0f, 9.0f));
-        flag.setPoint(2, p + sf::Vector2f(0.0f, 22.0f));
-        flag.setFillColor({114, 216, 168});
-        window.draw(flag);
+            sf::ConvexShape flag(3);
+            const sf::Vector2f p(checkpoint.bounds.position.x + 17.0f - camera.x, checkpoint.bounds.position.y - 24.0f - camera.y);
+            flag.setPoint(0, p);
+            flag.setPoint(1, p + sf::Vector2f(28.0f, 9.0f));
+            flag.setPoint(2, p + sf::Vector2f(0.0f, 22.0f));
+            flag.setFillColor({114, 216, 168});
+            window.draw(flag);
+        }
     }
 }
 
