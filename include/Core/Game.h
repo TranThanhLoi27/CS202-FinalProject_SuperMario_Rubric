@@ -117,6 +117,8 @@ private:
     void updateDifficultySelect();
     void updateCharacterSelect();
     void updateShop();
+    int menuItemAt(sf::Vector2f mousePosition) const;
+    int clickedMenuItem() const;
     void updateCamera(float dt);
     void render();
     Player::Profile upgradedProfile(int profileIndex) const;
@@ -151,6 +153,9 @@ private:
     std::string rebindWarning;
     float rebindWarningTimer = 0.0f;
     sf::Vector2i lastMousePos{-1, -1};
+    sf::Vector2f leftClickPosition{};
+    bool leftClickPending = false;
+    int hoveredMenuItem = -1;
 
     // Achievement system
     std::string currentAchievementText;
