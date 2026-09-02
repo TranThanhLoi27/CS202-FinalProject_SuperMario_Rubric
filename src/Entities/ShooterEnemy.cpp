@@ -23,7 +23,9 @@ ShooterEnemy::ShooterEnemy(sf::Vector2f pos)
     : Enemy(pos + sf::Vector2f(0.0f, -static_cast<float>(kFrameSize)),
             {kRenderedSize, kRenderedSize},
             Constants::SHOOTER_ENEMY_HEALTH, {118, 99, 196}),
-      rootPosition(position) {}
+      rootPosition(position) {
+    facingDirection = -1;
+}
 
 void ShooterEnemy::update(float dt, Level& level) {
     // The mushroom is rooted: it never integrates velocity or receives gravity.
@@ -51,7 +53,7 @@ void ShooterEnemy::update(float dt, Level& level) {
         level.addProjectile(std::make_unique<Projectile>(
             position + sf::Vector2f(
                 facingDirection > 0 ? size.x : -16.0f,
-                (size.y - 16.0f) * 0.85f
+                (size.y - 16.0f) * 0.83f
             ),
             sf::Vector2f(static_cast<float>(facingDirection) * 300.0f, 0.0f),
             false
