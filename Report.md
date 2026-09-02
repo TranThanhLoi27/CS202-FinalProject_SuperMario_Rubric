@@ -1,10 +1,11 @@
 # 2D Co-op Combat Platformer - Project Report
 
-**Môn học:** CS202 - Lập trình hướng đối tượng (Object-Oriented Programming)  
-**Nhóm thực hiện:** Duo Track - 2 thành viên  
-**Công nghệ:** C++17, SFML 3, CMake, Git/GitHub  
-**Phiên bản được khảo sát:** nhánh `main`, commit `64a3f08` (`fix clicking logic`)  
+**Môn học:** CS202 - Lập trình hướng đối tượng (Object-Oriented Programming)
+**Nhóm thực hiện:** Duo Track - 2 thành viên
+**Công nghệ:** C++17, SFML 3, CMake, Git/GitHub
+**Phiên bản được khảo sát:** nhánh `main`, commit `6f7ac6b` (`report demo, need to be checked`)
 **Ngày cập nhật báo cáo:** 02/09/2026
+**Baseline đối chiếu:** `CS202-FinalProject_SuperMario (1).docx` - yêu cầu đồ án nhóm thông thường
 
 ---
 
@@ -376,12 +377,14 @@ Mức đóng gói chưa tuyệt đối: `Entity::position`, `size`, `velocity`, 
 
 ### 3.4. Mẫu thiết kế và kỹ thuật kiến trúc
 
-- **Finite State Machine:** `GameState` điều khiển luồng Menu/Playing/Paused/Victory; `BossEnemy::Phase` điều khiển Phase One/Enraged.
-- **Action Mapping:** `InputManager::Action` tách action gameplay khỏi phím vật lý. Implementation hiện dùng hai mảng binding 16 phần tử; alias `ActionBindings` bằng `unordered_map` đã được khai báo nhưng chưa được sử dụng làm storage chính.
-- **Registry:** `CharacterSprites` dùng `unordered_map<string, CharacterSpriteSet>` để đăng ký và tra sprite set theo `spriteId`.
-- **Manager / Facade:** `Game` phối hợp các subsystem cấp ứng dụng; `Level` phối hợp object trong một màn chơi; `AudioManager` và `AssetManager` cung cấp API tập trung cho tài nguyên.
-- **Callback:** Player phát SFX thông qua `SoundCallback`, tránh phụ thuộc trực tiếp vào `AudioManager`.
-- **Data-driven construction:** `LevelLoader` biến ký tự map thành spawn data; `Level::spawnFromMap` tạo subclass tương ứng bằng `std::make_unique`.
+Đối chiếu với yêu cầu “ít nhất 5 design patterns” trong đề bài chuẩn, project có thể xác định sáu pattern/kỹ thuật kiến trúc có vai trò pattern rõ ràng:
+
+- **1. State / Finite State Machine:** `GameState` điều khiển luồng Menu/Playing/Paused/Victory; `BossEnemy::Phase` điều khiển Phase One/Enraged.
+- **2. Simple Factory:** `Level::spawnFromMap` nhận ký hiệu `P/R/F/B` và tập trung việc tạo đúng subclass enemy bằng `std::make_unique`, thay vì để client gameplay tự chọn constructor.
+- **3. Command / Action Mapping:** `InputManager::Action` tách action gameplay khỏi phím vật lý. Implementation hiện dùng hai mảng binding 16 phần tử; alias `ActionBindings` bằng `unordered_map` đã được khai báo nhưng chưa được sử dụng làm storage chính.
+- **4. Registry:** `CharacterSprites` dùng `unordered_map<string, CharacterSpriteSet>` để đăng ký và tra sprite set theo `spriteId`.
+- **5. Facade / Manager:** `Game` cung cấp điểm điều phối cấp ứng dụng; `Level` che giấu trình tự update actor, damage, pickup, hazard và cleanup; `AudioManager`/`AssetManager` cung cấp API tài nguyên tập trung.
+- **6. Observer-like Callback:** Player phát SFX thông qua `SoundCallback`, tránh phụ thuộc trực tiếp vào `AudioManager`. Đây là callback một subscriber, nhẹ hơn một Observer tổng quát nhưng vẫn thực hiện mục tiêu đảo chiều dependency.
 - **RAII:** Texture, font, buffer, music và container đều có owner rõ ràng; entity động dùng `unique_ptr` và được xóa bằng erase-remove.
 
 `AssetManager` và `AudioManager` không phải Singleton. Chúng là object thành viên của `Game`, giúp lifetime rõ ràng và thuận lợi hơn cho test hoặc thay thế implementation.
@@ -410,6 +413,91 @@ flowchart TD
 ---
 
 ## 4. Kế hoạch dự án so với thực tế (Plan vs. Actual Implementation)
+
+### 4.1. Baseline của đồ án nhóm thông thường
+
+File yêu cầu chính thức `CS202-FinalProject_SuperMario (1).docx` mô tả một game Mario-style 2D bằng C++ với các nhóm yêu cầu sau:
+
+| Nhóm yêu cầu chuẩn | Nội dung baseline |
+| --- | --- |
+| OOP | Thể hiện inheritance, polymorphism, encapsulation và abstraction. |
+| Design patterns | Ít nhất 5 pattern; Factory, Singleton, Observer được nêu làm ví dụ. |
+| Player | Nhận input, đi bộ, nhảy, tương tác và collision với world/enemy/item. |
+| Enemy | Có hành vi tự động và tương tác với player. |
+| Item / power-up | Có nhiều item với tác dụng khác nhau. |
+| Level | Ít nhất 3 level với độ khó tăng dần. |
+| Graphics / sound | Game 2D hoặc 3D; có SFX cơ bản và background music. |
+| Game state / progress | Start, pause, end; lưu score/progress/lives. |
+| Save / load | Đọc và ghi tiến trình bằng file handling C++. |
+| Advanced | Enemy AI; nhiều nhân vật có ability riêng và character selection. |
+| Bonus | Level editor có save/load; game 3D. |
+| Deliverables | Source code, class diagram, mô tả OOP/pattern, demo video; sequence diagram là tùy chọn. |
+
+Rubric chức năng phân bổ trọng tâm cho input/movement/collision, enemy, item, hoàn thành ba level và âm thanh. Phần thiết kế chấm OOP và năm design patterns; AI, multiple players và 3D nằm trong phần additional requirements.
+
+### 4.2. Ma trận đáp ứng yêu cầu chuẩn
+
+| Tiêu chí từ DOCX | Bằng chứng trong project thực tế | Mức đáp ứng |
+| --- | --- | --- |
+| Player input, movement, collision | Hai bộ input, acceleration, jump, coyote time, gravity, AABB tile collision, fixed physics step. | **Vượt baseline** |
+| Enemy behavior | Slime, rooted mushroom shooter, flying bat và boss hai phase; mỗi loại có AI/kinematics riêng. | **Vượt baseline** |
+| Power-ups và items | Coin, 4 food variant, Heart, Block; inventory 6 slot, consume/throw/place/pickup. | **Đạt về gameplay**; chưa có cây subclass `Item` như ví dụ OOP trong DOCX. |
+| 3 level completion | Có 3 level thường và 1 Boss Lair, tổng cộng 4 file level. | **Vượt baseline: 4/3 level** |
+| Sound effects và background | 10 SFX theo event và 1 background track dạng streaming/loop. | **Vượt baseline** |
+| Bốn tính chất OOP | Entity/Character/Enemy hierarchy, virtual dispatch, protected/private state, pure virtual interface. | **Đạt**; transform của `Entity` vẫn public. |
+| Ít nhất 5 patterns | State, Simple Factory, Command/Action Mapping, Registry, Facade/Manager và callback kiểu Observer. | **Đạt về kiến trúc**; nên trình bày rõ code evidence khi bảo vệ. |
+| Game state management | 11 `GameState`: Menu, Info, LevelSelect, DifficultySelect, Shop, CharacterSelect, Controls, Playing, Paused, GameOver, Victory. | **Vượt baseline** |
+| Player progress | Wallet coin, level unlock, profile upgrade, Legend unlock và achievement. | **Vượt baseline** |
+| Save/load file | Binary `data.txt`, tự load khi khởi động và save khi đóng game. | **Đạt** |
+| AI advanced feature | Bốn archetype AI, target player gần nhất, aggro/patrol range và Boss FSM. | **Vượt baseline** |
+| Multiple characters | 6 profile ability khác nhau và màn character selection. | **Vượt baseline** |
+| Multiple players | Local co-op đồng thời 2 player, camera chung, giới hạn khoảng cách và inventory riêng. | **Vượt yêu cầu advanced** |
+| Level editor bonus | Level được data-driven bằng text nhưng chưa có editor cho người chơi tạo/lưu map. | **Chưa làm bonus** |
+| 3D bonus | Project chủ đích là 2D SFML. | **Không làm bonus 3D** |
+| Documentation | `Report.md` có class diagram, flow diagram, mô tả OOP/pattern và plan-vs-actual. | **Đạt phần tài liệu**; demo video không có trong repository. |
+
+### 4.3. Các tính năng mở rộng hoặc làm sâu baseline
+
+So với mức tối thiểu trong DOCX, project có các hệ thống được mở rộng hoặc triển khai sâu hơn đáng kể sau:
+
+1. Local co-op đồng thời thay vì chỉ chuyển đổi giữa nhiều nhân vật.
+2. Shared camera theo trung điểm và giới hạn khoảng cách hai player.
+3. Hunger giảm theo thời gian và starvation damage.
+4. Inventory sáu slot độc lập cho từng player.
+5. Đặt block động và thu hồi riêng block do player đặt.
+6. Tombstone lưu toàn bộ inventory khi chết và checkpoint respawn.
+7. Boss hai phase với spread projectile và shockwave.
+8. Ba mức difficulty thay đổi HP enemy.
+9. Shop, wallet, mở khóa Legend và nâng cấp profile.
+10. Bốn achievement kèm notification và fairy fireworks.
+11. Sáu profile nhân vật data-driven với multiplier/ability khác nhau.
+12. Menu click/hover, mouse wheel và key rebinding cho cả hai player.
+13. Audio pool cho nhiều SFX đồng thời và character-specific attack sound.
+14. Parallax background, fairy orbit/trail và spritesheet animation theo state.
+15. Auto-save progression và màn reset save data.
+
+### 4.4. Đánh giá tuyên bố “gấp đôi yêu cầu gốc”
+
+Không thể chứng minh “gấp đôi” bằng cách cộng điểm rubric, vì các tiêu chí không cùng đơn vị và rubric còn có bonus 3D/level editor mà project không triển khai. Tuy nhiên, có thể bảo vệ nhận định **phạm vi gameplay và số hệ thống thực tế đạt xấp xỉ hoặc lớn hơn 2 lần một project baseline single-player**, dựa trên các chỉ dấu định lượng sau:
+
+| Chỉ dấu | Baseline thông thường | Project hiện tại | Tỉ lệ / nhận xét |
+| --- | ---: | ---: | --- |
+| Player hoạt động đồng thời | 1 | 2 | **2x** |
+| Profile nhân vật | Mario/Luigi hoặc vài lựa chọn mẫu | 6 profile | Ít nhất **2x** so với ba lựa chọn mẫu. |
+| Enemy AI archetype | Basic Goomba/Koopa AI | 4 archetype, gồm boss FSM | Khoảng **2-4x** về variety/depth. |
+| Game state tối thiểu | Start, Pause, End = 3 | 11 state | Hơn **3x** số state. |
+| Level | 3 | 4 | **1.33x**, riêng tiêu chí này chưa đạt 2x. |
+| Audio tối thiểu | Jump, collect, defeat + background | 10 SFX + background | Hơn **2x** số event âm thanh. |
+| Progression | Score/lives/save | Coin, unlock level, shop, upgrade, Legend, achievement, save | Nhiều lớp progression hơn baseline. |
+| Survival/world interaction | Không bắt buộc | Hunger, starvation, tombstone, checkpoint, block placement/reclaim | Toàn bộ là phạm vi bổ sung. |
+
+Vì vậy, câu kết luận phù hợp để trình bày là:
+
+> Dự án không nhân đôi từng dòng rubric một cách máy móc, nhưng đã đạt và vượt hầu hết yêu cầu chức năng chuẩn; xét tổng thể số lượng và chiều sâu hệ thống gameplay, phạm vi triển khai xấp xỉ hoặc trên 2 lần baseline của một game Mario-style single-player thông thường.
+
+Không nên tuyên bố “đạt 2x tuyệt đối” cho toàn bộ rubric cho đến khi xử lý các khoảng trống: level mới chỉ 4/3 chứ chưa phải 6/3, chưa có level editor/3D bonus, item chưa có subclass polymorphic riêng, GameOver chưa kích hoạt và một số logic tombstone/loot chưa đúng thiết kế.
+
+### 4.5. So sánh với kế hoạch nội bộ của nhóm
 
 | Nội dung trong kế hoạch | Thực tế trong repository | Đánh giá / lý do |
 | --- | --- | --- |
@@ -525,7 +613,9 @@ Dự án đã đạt được một vertical slice hoàn chỉnh của game plat
 
 Về OOP, điểm nổi bật nhất là cây kế thừa entity rõ ràng, virtual dispatch qua `Enemy`, ownership bằng `unique_ptr`, module hóa trách nhiệm và các subsystem có lifetime do `Game`/`Level` quản lý. Dự án cũng cho thấy bài học thực tế rằng kiến trúc tốt không chỉ nằm ở class diagram mà còn ở việc giữ interface ổn định, quản lý ownership và kiểm thử hồi quy sau merge.
 
-So với kế hoạch ban đầu, nhóm đã hoàn thành nhiều mục stretch như FlyingEnemy, boss nhiều phase, Level 3, save/load, achievement và hiệu ứng fairy. Một số quy tắc co-op/loot vẫn chưa khớp hoàn toàn với thiết kế và đã được liệt kê minh bạch trong phần Known Issues.
+So với kế hoạch ban đầu, nhóm đã hoàn thành nhiều mục stretch như FlyingEnemy, boss nhiều phase, Level 3, save/load, achievement và hiệu ứng fairy. Khi đối chiếu thêm với đề bài nhóm thông thường trong DOCX, project đạt hoặc vượt phần lớn nhóm chức năng cốt lõi, đồng thời có 15 hệ thống/khả năng mở rộng hoặc làm sâu baseline. Vì vậy có thể nhận định phạm vi gameplay tổng thể xấp xỉ hoặc trên 2 lần baseline single-player, nhưng không nên diễn giải thành mọi tiêu chí rubric đều được nhân đôi.
+
+Một số quy tắc co-op/loot vẫn chưa khớp hoàn toàn với thiết kế; level editor, 3D bonus và demo video cũng chưa có trong repository. Các điểm này đã được ghi minh bạch trong ma trận yêu cầu và phần Known Issues.
 
 ### 7.2. Hướng phát triển ưu tiên
 
@@ -542,4 +632,4 @@ So với kế hoạch ban đầu, nhóm đã hoàn thành nhiều mục stretch 
 
 ---
 
-**Tóm tắt mức độ hoàn thành:** Project đã có thể build thành công và thể hiện đầy đủ phần lớn yêu cầu của Duo Track. Các phần chưa khớp kế hoạch đã có phạm vi rõ ràng và có thể hoàn thiện theo danh sách ưu tiên trên mà không cần thay đổi kiến trúc tổng thể.
+**Tóm tắt mức độ hoàn thành:** Project build thành công, đạt/vượt phần lớn yêu cầu của đề bài nhóm thông thường và có phạm vi gameplay tổng thể đủ cơ sở để mô tả là xấp xỉ 2x baseline. Đây là đánh giá theo độ rộng và chiều sâu tính năng, không phải tuyên bố điểm số rubric 2x. Các phần chưa khớp kế hoạch đã có phạm vi rõ ràng và có thể hoàn thiện theo danh sách ưu tiên trên mà không cần thay đổi kiến trúc tổng thể.

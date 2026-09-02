@@ -84,7 +84,7 @@ void MenuScreen::draw(sf::RenderWindow& window, GameState state, int menuIndex, 
         for (int i = viewportOffset; i < endItem; ++i) {
             row(window, entries[i], 75.0f + kRowSpacing * (i - viewportOffset), i == hoveredMenuItem);
         }
-        HUD::drawTextCentered(window, "Up/Down / Scroll: choose   Enter/Click: confirm", {kScreenCenterX, 600.0f}, 20, {204, 213, 210});
+        HUD::drawTextCentered(window, "Scroll: choose   Click: confirm", {kScreenCenterX, 600.0f}, 20, {204, 213, 210});
         drawScrollDots(window, totalItems, maxVisible, viewportOffset, 575.0f);
         return;
     }
@@ -143,7 +143,7 @@ void MenuScreen::draw(sf::RenderWindow& window, GameState state, int menuIndex, 
             }
         }
         const std::string selection = playerCount == 1 ? "P1" : "P1 / P2";
-        HUD::drawTextCentered(window, selection + ": W/S, Up/Down, A/D choose   Enter/Click: start", {kScreenCenterX, 560.0f}, 19, {204, 213, 210});
+        HUD::drawTextCentered(window, selection + "Click: start", {kScreenCenterX, 560.0f}, 19, {204, 213, 210});
         HUD::drawTextCentered(window, "Scroll: Mouse wheel   Active: Player " + std::to_string(activePlayer + 1), {kScreenCenterX, 590.0f}, 19, {246, 233, 190});
         drawScrollDots(window, totalItems, maxVisible, viewportOffset, 620.0f);
         return;
@@ -200,7 +200,7 @@ void MenuScreen::drawPause(sf::RenderWindow& window, int pauseMenuIndex) {
     for (int i = viewportOffset; i < endItem; ++i) {
         row(window, entries[i], 140.0f + kRowSpacing * (i - viewportOffset), i == pauseMenuIndex);
     }
-    HUD::drawTextCentered(window, "Up/Down: choose   Enter/Click: confirm   Escape: resume", {kScreenCenterX, 550.0f}, 20, {204, 213, 210});
+    HUD::drawTextCentered(window, "Click: confirm   Escape: resume", {kScreenCenterX, 550.0f}, 20, {204, 213, 210});
 }
 
 void MenuScreen::drawControls(sf::RenderWindow& window, int controlsPlayerIndex, int controlsActionIndex,
@@ -251,7 +251,7 @@ void MenuScreen::drawControls(sf::RenderWindow& window, int controlsPlayerIndex,
         HUD::drawTextCentered(window, "Press an unassigned key...", {kScreenCenterX, 560.0f}, 24, {246, 233, 190});
         HUD::drawTextCentered(window, "Escape: cancel", {kScreenCenterX, 595.0f}, 20, {204, 213, 210});
     } else {
-        HUD::drawTextCentered(window, "Click tab to switch player   Click key row to rebind   Escape: back", {kScreenCenterX, 560.0f}, 20, {204, 213, 210});
+        HUD::drawTextCentered(window, "Click key row to rebind   Escape: back", {kScreenCenterX, 560.0f}, 20, {204, 213, 210});
     }
 
     if (!rebindWarning.empty()) {
