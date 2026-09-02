@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <string>
 
 namespace {
@@ -219,4 +220,30 @@ void HUD::draw(sf::RenderWindow& window, const Level& level) const {
         std::string label = "P" + std::to_string(i + 1);
         drawPanel(window, *players[i], pos, label);
     }
+}
+
+void HUD::drawAchievement(sf::RenderWindow& window, const std::string& text, sf::Vector2f position, float timer) {
+    if (timer <= 0.0f) return;
+
+    const float width = 300.0f;
+    const float height = 60.0f;
+    const float alpha = std::min(timer, 0.5f) * 2.0f * 255.0f;
+
+    // Background panel
+    sf::RectangleShape panel({width, height});
+    panel.setPosition(position);
+    panel.setFillColor(sf::Color(16, 20, 26, static_cast<uint8_t>(alpha * 0.9f)));
+    panel.setOutlineThickness(2.0f);
+    panel.setOutlineColor(sf::Color(246, 233, 190, static_cast<uint8_t>(alpha)));
+    window.draw(panel);
+
+    // Achievement icon/star
+    sf::RectangleShape star({20.0f, 20.0f});
+    star.setPosition({position.x + 10.0f, position.y + 20.0f});
+    star.setFillColor(sf::Color(245, 158, 11, static_cast<uint8_t>(alpha)));
+    window.draw(star);
+
+    // Achievement text
+    drawText(window, "ACHIEVEMENT UNLOCKED!", {position.x + 40.0f, position.y + 10.0f}, 14, sf::Color(246, 233, 190));
+    drawText(window, text, {position.x + 40.0f, position.y + 30.0f}, 12, sf::Color(204, 213, 210));
 }

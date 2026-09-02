@@ -1,30 +1,12 @@
 #pragma once
 
 #include <SFML/Window/Keyboard.hpp>
-
+#include <SFML/Window/Mouse.hpp>
+#include <SFML/Window/WindowBase.hpp>
 #include <array>
-#include <cstddef>
 #include <string>
 #include <unordered_map>
-
-enum class Action {
-    MoveLeft,
-    MoveRight,
-    Jump,
-    Attack,
-    Dash,
-    Dodge,
-    UseItem,
-    PrevSlot,
-    NextSlot,
-    Slot1,
-    Slot2,
-    Slot3,
-    Slot4,
-    Slot5,
-    Slot6,
-    Pause
-};
+#include <vector>
 
 struct InputState {
     bool moveLeft = false;
@@ -38,40 +20,76 @@ struct InputState {
     bool slotPrev = false;
     bool slotNext = false;
     int slotSelect = -1;
+    bool menuUp = false;
+    bool menuDown = false;
+    bool menuLeft = false;
+    bool menuRight = false;
+    bool menuConfirm = false;
+    bool menuBack = false;
+    bool pause = false;
+    bool info = false;
 };
 
 class InputManager {
 public:
+    enum Action {
+        MoveLeft = 0,
+        MoveRight,
+        Jump,
+        Attack,
+        Dodge,
+        UseItem,
+        SlotPrev,
+        SlotNext,
+        MenuUp,
+        MenuDown,
+        MenuLeft,
+        MenuRight,
+        MenuConfirm,
+        MenuBack,
+        Pause,
+        Info,
+        ActionCount
+    };
+
     using ActionBindings = std::unordered_map<Action, sf::Keyboard::Key>;
 
     InputManager();
     void update();
+    void update(const sf::WindowBase& window);
     const InputState& getPlayer1Input() const;
     const InputState& getPlayer2Input() const;
-
-    bool isActionActive(Action action) const;
-    bool isActionActive(Action action, std::size_t playerIndex) const;
-    bool isActionPressed(Action action, std::size_t playerIndex = 0) const;
-    bool rebindKey(Action action, sf::Keyboard::Key newKey);
-    bool rebindKey(Action action, sf::Keyboard::Key newKey, std::size_t playerIndex);
-    sf::Keyboard::Key getBinding(Action action, std::size_t playerIndex = 0) const;
-    const ActionBindings& getBindings(std::size_t playerIndex = 0) const;
-
-    static const std::array<Action, 16>& actions();
-    static std::string actionToString(Action action);
-    static std::string keyToString(sf::Keyboard::Key key);
-
-    // Raw-key helpers remain available for non-rebindable system shortcuts.
     bool pressed(sf::Keyboard::Key key) const;
     bool down(sf::Keyboard::Key key) const;
 
-private:
-    void initializeDefaultBindings();
-    InputState makeInputState(std::size_t playerIndex) const;
+    sf::Keyboard::Key getKey(int playerIndex, int actionIndex) const;
+    bool rebindKey(int playerIndex, int actionIndex, sf::Keyboard::Key newKey);
+    bool isKeyAssigned(sf::Keyboard::Key key) const;
+    bool isKeyAssignedExcept(sf::Keyboard::Key key, int playerIndex, int actionIndex) const;
+    sf::Keyboard::Key pollNewKey() const;
+    static std::string getKeyName(sf::Keyboard::Key key);
+    static const char* getActionName(int actionIndex);
 
-    std::array<ActionBindings, 2> keyBindings;
-    std::unordered_map<sf::Keyboard::Key, bool> currentKeyStates;
-    std::unordered_map<sf::Keyboard::Key, bool> previousKeyStates;
+    // Mouse input methods
+    sf::Vector2i getMousePosition() const;
+    bool mousePressed(sf::Mouse::Button button) const;
+    bool mouseDown(sf::Mouse::Button button) const;
+    float getMouseWheelDelta() const;
+    void setMouseWheelDelta(float delta);
+    void resetMouseWheelDelta();
+
+private:
+    std::vector<sf::Keyboard::Key> relevantKeys;
+    std::vector<sf::Keyboard::Key> currentKeys;
+    std::vector<sf::Keyboard::Key> previousKeys;
     InputState player1;
     InputState player2;
+    sf::Keyboard::Key p1Keys[16]; // Fixed size array for all actions (ActionCount = 16)
+    sf::Keyboard::Key p2Keys[16]; // Fixed size array for all actions (ActionCount = 16)
+
+    // Mouse input tracking
+    sf::Vector2i mousePosition;
+    std::vector<sf::Mouse::Button> currentMouseButtons;
+    std::vector<sf::Mouse::Button> previousMouseButtons;
+    float mouseWheelDelta;
 };

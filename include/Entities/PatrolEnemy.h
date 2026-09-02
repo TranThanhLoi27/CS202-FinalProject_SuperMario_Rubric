@@ -2,7 +2,6 @@
 #pragma once
 
 #include "Entities/Enemy.h"
-#include "Graphics/Animator.h"
 
 class PatrolEnemy : public Enemy {
 public:
@@ -13,9 +12,7 @@ public:
     int getDamage() const override;
 
 private:
-    Animator animator;
+    float animTime = 0.0f;
     float deathTimer = 0.0f;
     bool isDying = false;
 };
-
-

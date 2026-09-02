@@ -32,8 +32,7 @@ public:
     void draw(sf::RenderWindow& window, sf::Vector2f camera) const override;
     void takeDamage(int damage, float knockback = 0.0f) override;
     void heal(int amount);
-    void restoreHunger(float amount);
-    void recordPlacedBlock(int tileX, int tileY);
+    void restoreHunger(int amount);
     void die(Level& level, bool fell = false);
     bool isRespawning() const;
     bool isDodging() const;
@@ -69,11 +68,9 @@ private:
     float dodgeTimer = 0.0f;
     float dodgeCooldownTimer = 0.0f;
     float respawnTimer = 0.0f;
-    float starvationDamageAccumulator = 0.0f;
+    float hungerDamageTimer = 0.0f;
     float coyoteTimer = 0.0f;
     float jumpBufferTimer = 0.0f;
-
-    std::vector<sf::Vector2i> placedBlockTiles;
 
     Animator animator;
     const CharacterSpriteSet* sprites = nullptr;
@@ -84,7 +81,6 @@ private:
 
     Profile profile;
 
-    bool tryReclaimPlacedBlock(Level& level);
     void updateAnimation(float dt);
     void drawSprite(sf::RenderWindow& window, sf::Vector2f camera) const;
 };

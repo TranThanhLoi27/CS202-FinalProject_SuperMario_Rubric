@@ -1,12 +1,12 @@
-#include "Entities/Player.h"
 #include "Entities/DroppedItem.h"
+#include "Entities/Player.h"
 #include "Entities/Tombstone.h"
 #include "Utils/Constants.h"
 #include "World/Collision.h"
 #include "World/Level.h"
 
 #include <algorithm>
-#include <cmath>
+#include <cstdint>
 
 namespace {
 float approach(float value, float target, float step) {
@@ -73,24 +73,11 @@ void Player::update(float dt, const InputState& input, Level& level) {
             position = spawn;
             velocity = {};
             health = maxHealth;
-            hunger = 50.0f;
-            starvationDamageAccumulator = 0.0f;
+            hunger = 50;
             firstHitGuardAvailable = profile.blocksFirstHit;
             if (sprites) animator.play(sprites->idle);
         }
         return;
-    }
-
-    hunger = std::max(0.0f, hunger - Constants::HUNGER_DRAIN_RATE * dt);
-    if (hunger <= 0.0f) {
-        starvationDamageAccumulator += Constants::STARVATION_DAMAGE_RATE * dt;
-        const int starvationDamage = static_cast<int>(starvationDamageAccumulator);
-        if (starvationDamage > 0) {
-            health = std::max(0, health - starvationDamage);
-            starvationDamageAccumulator -= static_cast<float>(starvationDamage);
-        }
-    } else {
-        starvationDamageAccumulator = 0.0f;
     }
 
     const int move = int(input.moveRight) - int(input.moveLeft);
@@ -115,10 +102,8 @@ void Player::update(float dt, const InputState& input, Level& level) {
         coyoteTimer = 0;
     }
 
-    if (input.attack) {
+    if (input.attack)
         attackTimer = 0.18f;
-        tryReclaimPlacedBlock(level);
-    }
 
     if (input.dodge && dodgeCooldownTimer <= 0) {
         dodgeTimer = Constants::PLAYER_DODGE_DURATION;
@@ -176,6 +161,14 @@ void Player::drawSprite(sf::RenderWindow& window, sf::Vector2f camera) const {
         position.x - camera.x + size.x * 0.5f,
         position.y - camera.y + size.y
     });
+
+    // Apply dodge fading effect
+    if (dodgeTimer > 0.0f) {
+        const float fadeAlpha = (dodgeTimer / Constants::PLAYER_DODGE_DURATION) * 150.0f;
+        const float finalAlpha = std::max(50.0f, fadeAlpha);
+        sprite.setColor(sf::Color(255, 255, 255, static_cast<uint8_t>(finalAlpha)));
+    }
+
     window.draw(sprite);
 }
 
@@ -210,18 +203,7 @@ void Player::draw(
 
 void Player::takeDamage(int d, float knockback) { if (isRespawning()) return; if (firstHitGuardAvailable) { firstHitGuardAvailable = false; return; } Character::takeDamage(d, knockback); }
 void Player::heal(int a) { health = std::min(maxHealth, health + a); }
-void Player::restoreHunger(float amount) {
-    if (amount <= 0.0f) return;
-    hunger = std::min(static_cast<float>(Constants::PLAYER_MAX_HUNGER), hunger + amount);
-    starvationDamageAccumulator = 0.0f;
-}
-void Player::recordPlacedBlock(int tileX, int tileY) {
-    const sf::Vector2i tilePosition(tileX, tileY);
-    if (std::find(placedBlockTiles.begin(), placedBlockTiles.end(), tilePosition) ==
-        placedBlockTiles.end()) {
-        placedBlockTiles.push_back(tilePosition);
-    }
-}
+void Player::restoreHunger(int a) { hunger = std::min<float>(Constants::PLAYER_MAX_HUNGER, hunger + a); }
 void Player::die(Level& l, bool fell) { if (isRespawning()) return; auto stored = inventory.takeAll(); l.addTombstone(std::make_unique<Tombstone>(fell ? lastSafePosition : position, stored, id)); health = 0; respawnTimer = 2; diedBefore = true; recoveredTombstone = false; }
 bool Player::isRespawning() const { return respawnTimer > 0; }
 bool Player::isDodging() const { return dodgeTimer > 0 && !isRespawning(); }
@@ -240,35 +222,6 @@ bool Player::hasDiedBefore() const { return diedBefore; }
 int Player::getSelectedSlot() const { return inventory.selectedSlot; }
 float Player::getActionTimer() const { return inventory.actionTimer; }
 
-bool Player::tryReclaimPlacedBlock(Level& level) {
-    const float targetWorldX = position.x +
-        (facingDirection > 0 ? size.x + 8.0f : -8.0f);
-    const float targetWorldY = position.y + size.y * 0.5f;
-    const sf::Vector2i targetTile(
-        static_cast<int>(std::floor(targetWorldX / Constants::TILE_SIZE)),
-        static_cast<int>(std::floor(targetWorldY / Constants::TILE_SIZE))
-    );
-
-    for (auto& owner : level.getPlayers()) {
-        auto& placedTiles = owner->placedBlockTiles;
-        const auto placed = std::find(placedTiles.begin(), placedTiles.end(), targetTile);
-        if (placed == placedTiles.end()) continue;
-
-        TileMap& map = level.getTileMap();
-        if (!map.isSolidTile(targetTile.x, targetTile.y)) {
-            placedTiles.erase(placed);
-            return false;
-        }
-        if (!map.setSolid(targetTile.x, targetTile.y, false)) return false;
-
-        placedTiles.erase(placed);
-        inventory.add(ItemType::Block, 1);
-        return true;
-    }
-
-    return false;
-}
-
 void Player::useSelectedItem(Level& level) {
     if (!inventory.canAct() || isRespawning()) return;
 
@@ -276,7 +229,7 @@ void Player::useSelectedItem(Level& level) {
     if (slot < FOOD_TYPE_COUNT) {
         if (inventory.getSlot(slot) <= 0) return;
         inventory.removeFromSlot(slot);
-        restoreHunger(Constants::FOOD_HUNGER_RESTORE);
+        restoreHunger(static_cast<int>(Constants::PLAYER_MAX_HUNGER * Constants::FOOD_HUNGER_PERCENT[slot]));
         heal(1);
         inventory.startAction(Constants::EAT_ACTION_TIME);
         return;

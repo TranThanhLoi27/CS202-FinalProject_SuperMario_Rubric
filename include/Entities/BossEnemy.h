@@ -2,7 +2,6 @@
 #pragma once
 
 #include "Entities/Enemy.h"
-#include "Graphics/Animator.h"
 
 class BossEnemy : public Enemy {
 public:
@@ -13,11 +12,22 @@ public:
     int getDamage() const override;
 
 private:
-    float shootCooldown = 1.0f;
-    Animator animator;
+    enum class Phase {
+        PhaseOne,
+        Enraged
+    };
+
+    void updatePhase();
+    float movementSpeed() const;
+    float attackCooldown() const;
+    void fireAttack(Level& level);
+
+    Phase phase = Phase::PhaseOne;
+    int movementDirection = -1;
+    float shootCooldown = 0.0f;
+    float animTime = 0.0f;
     float deathTimer = 0.0f;
     bool isDying = false;
     bool isAttacking = false;
     bool hasFired = false;
 };
-

@@ -22,4 +22,3 @@ private:
     float life = 4.0f;
     float animTime = 0.0f;
 };
-

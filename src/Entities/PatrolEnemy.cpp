@@ -7,16 +7,14 @@
 #include <cmath>
 
 PatrolEnemy::PatrolEnemy(sf::Vector2f pos)
-    : Enemy(pos, {64.0f, 64.0f}, Constants::PATROL_ENEMY_HEALTH, {185, 104, 78}) {
-    animator.play(EnemyTextures::patrolWalkAnim);
+    : Enemy(pos, {32.0f, 32.0f}, Constants::PATROL_ENEMY_HEALTH, {185, 104, 78}) {
+    facingDirection = -1;
 }
 
 void PatrolEnemy::update(float dt, Level& level) {
     tick(dt);
 
     if (isDying) {
-        animator.play(EnemyTextures::patrolDieAnim);
-        animator.update(dt);
         deathTimer -= dt;
         velocity.x = 0.0f;
         applyGravity(dt);
@@ -29,9 +27,7 @@ void PatrolEnemy::update(float dt, Level& level) {
         return;
     }
 
-    animator.play(EnemyTextures::patrolWalkAnim);
-    animator.update(dt);
-
+    animTime += dt;
     if (hitTimer <= 0.0f) {
         velocity.x = static_cast<float>(facingDirection) * 35.0f;
     }
@@ -51,7 +47,6 @@ void PatrolEnemy::takeDamage(int damage, Level& level, const Player& source) {
     if (health <= 0) {
         isDying = true;
         deathTimer = 0.35f;
-        animator.play(EnemyTextures::patrolDieAnim);
         level.dropLoot(position + size * 0.5f);
     }
 }
@@ -63,11 +58,19 @@ int PatrolEnemy::getDamage() const {
 void PatrolEnemy::draw(sf::RenderWindow& window, sf::Vector2f camera) const {
     if (EnemyTextures::patrol) {
         sf::Sprite sprite(*EnemyTextures::patrol);
-        sprite.setTextureRect(animator.getFrameRect());
-        sprite.setOrigin({16.0f, 32.0f});
-        const float scale = size.y / 32.0f; // Scale frame (32x32) to match size (64x64, 2x scale)
-        sprite.setScale({facingDirection > 0 ? scale : -scale, scale});
-        sprite.setPosition({position.x - camera.x + size.x * 0.5f, position.y - camera.y + size.y});
+        int frameIndex = 0;
+        if (isDying) {
+            frameIndex = 3; // Frame 4: Death
+        } else if (hitTimer > 0.0f) {
+            frameIndex = 2; // Frame 3: Hurt / Hit
+        } else {
+            frameIndex = static_cast<int>(animTime * 6.0f) % 2; // Frame 1 & 2: Idle / Move
+        }
+
+        sprite.setTextureRect(sf::IntRect({frameIndex * 32, 0}, {32, 32}));
+        sprite.setOrigin({16.0f, 0.0f});
+        sprite.setScale({facingDirection > 0 ? -1.0f : 1.0f, 1.0f});
+        sprite.setPosition({position.x - camera.x + 16.0f, position.y - camera.y});
         window.draw(sprite);
     } else {
         drawBody(window, camera);

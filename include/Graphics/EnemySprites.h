@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Graphics/Animation.h"
 #include <SFML/Graphics/Texture.hpp>
 
 struct EnemyTextures {
@@ -31,19 +30,4 @@ struct EnemyTextures {
     static const sf::Texture* bossDie;
     static const sf::Texture* bossAttack;
     static const sf::Texture* projectile;
-
-    // Animations
-    static Animation patrolWalkAnim;
-    static Animation patrolDieAnim;
-
-    static Animation flyingRunAnim;
-    static Animation flyingHurtAnim;
-    static Animation flyingDieAnim;
-
-    static Animation bossWalkAnim;
-    static Animation bossIdleAnim;
-    static Animation bossAttackAnim;
-    static Animation bossHurtAnim;
-    static Animation bossDieAnim;
 };
-

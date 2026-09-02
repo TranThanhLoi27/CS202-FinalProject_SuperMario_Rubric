@@ -18,6 +18,7 @@ public:
     static void drawTextCentered(sf::RenderWindow& window, const std::string& text, sf::Vector2f center, unsigned size, sf::Color color);
     static void drawHearts(sf::RenderWindow& window, sf::Vector2f position, float health, int maxHealth);
     static void drawHungerBar(sf::RenderWindow& window, sf::Vector2f position, float hunger, float maxHunger);
+    static void drawAchievement(sf::RenderWindow& window, const std::string& text, sf::Vector2f position, float timer);
 
 private:
     static void drawPanel(sf::RenderWindow& window, const Player& player, sf::Vector2f position, const std::string& label);

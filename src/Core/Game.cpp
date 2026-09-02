@@ -8,6 +8,7 @@
 #include "Entities/Tombstone.h"
 #include "Graphics/CharacterSprites.h"
 #include "Graphics/EnemySprites.h"
+#include "UI/MenuScreen.h"
 #include "Utils/Constants.h"
 
 #include <algorithm>
@@ -40,7 +41,7 @@ const std::array<DifficultyOption, 3> DIFFICULTIES = {{
     {"Hard", 2},
 }};
 
-constexpr int LEGEND_PRICE = 50;
+constexpr int LEGEND_PRICE = 80;
 constexpr int UPGRADE_PRICE = 20;
 }
 
@@ -53,17 +54,16 @@ Game::Game()
     }
     HUD::setFont(assets.font("roboto"));
     loadTexture();
-    MenuScreen::setSelectorTexture(assets.texture("selector"));
-    Level::setTextures(assets.texture("solid"), assets.texture("goal"), assets.texture("spike"));
+    MenuScreen::setSelectorTextures(assets.texture("selector1"), assets.texture("selector2"));
+    Level::setTextures(assets.texture("solid"), assets.texture("goal"), assets.texture("spike"), assets.texture("fairy"), assets.texture("background"));
     HUD::setTextures(assets.texture("heart"), assets.texture("meat"), assets.texture("food"),
                       assets.texture("coin"), assets.texture("solid"));
     EnemyTextures::setTextures(assets.texture("patrol"),
-                               assets.texture("mushroomIdle"), assets.texture("mushroomAttack"),
-                               assets.texture("mushroomDie"),
+                               assets.texture("shooterIdle"), assets.texture("shooterAttack"), assets.texture("shooterDie"),
                                assets.texture("flyingIdle"), assets.texture("flyingHurt"), assets.texture("flyingDie"),
                                assets.texture("bossIdle"), assets.texture("bossWalk"), assets.texture("bossHurt"),
-                               assets.texture("bossDie"), assets.texture("bossAttack"), assets.texture("bossProjectile"));
-    Projectile::setTextures(assets.texture("mushroomProjectile"), assets.texture("bossProjectile"));
+                               assets.texture("bossDie"), assets.texture("bossAttack"), assets.texture("boss_projectile"));
+    Projectile::setTextures(assets.texture("shooter_projectile"), assets.texture("boss_projectile"));
     DroppedItem::setTextures(assets.texture("food"), assets.texture("coin"), assets.texture("solid"));
     registerCharacterSprites();
     Tombstone::setTexture(assets.texture("tombstone"));
@@ -72,6 +72,18 @@ Game::Game()
     level.loadDefault();
     audio.setMasterVolume(70.0f);
     audio.playMusic("assets/audio/background.ogg");
+
+    // Initialize achievement tracking
+    previousAchievements.resize(4, 0);
+    achievementDisplayTimer = 0.0f;
+
+    // Try to load saved game data
+    loadGame();
+}
+
+Game::~Game() {
+    // Auto-save when closing the game
+    saveGame();
 }
 
 void Game::loadTexture(){
@@ -81,22 +93,24 @@ void Game::loadTexture(){
     assets.LoadTexture("coin", "assets/textures/coin.png");
     assets.LoadTexture("rush", "assets/textures/rush.png");
     if (!assets.LoadTexture("background", "assets/textures/background.png") ||
-        !assets.LoadTexture("selector", "assets/textures/selector.png") ||
+        !assets.LoadTexture("selector2", "assets/textures/selector1.png") ||
+        !assets.LoadTexture("selector1", "assets/textures/selector2.png") ||
+        !assets.LoadTexture("fairy", "assets/textures/fairy.png") ||
         !assets.LoadTexture("solid", "assets/textures/solid.png") ||
         !assets.LoadTexture("goal", "assets/textures/goal.png") ||
         !assets.LoadTexture("spike", "assets/textures/spike.png") ||
         !assets.LoadTexture("ori", "assets/textures/ori.png") ||
         (!assets.LoadTexture("patrol", "assets/textures/slime.png") && !assets.LoadTexture("patrol", "assets/textures/patrol.png")) ||
-        !assets.LoadTexture("mushroomIdle", "assets/textures/mushroom/mushroom_idle.png") ||
-        !assets.LoadTexture("mushroomAttack", "assets/textures/mushroom/mushroom_attack.png") ||
-        !assets.LoadTexture("mushroomDie", "assets/textures/mushroom/mushroom_die.png") ||
+        (!assets.LoadTexture("shooterIdle", "assets/textures/mushroom/mushroom_idle.png") && !assets.LoadTexture("shooterIdle", "assets/textures/shooter.png")) ||
+        !assets.LoadTexture("shooterAttack", "assets/textures/mushroom/mushroom_attack.png") ||
+        !assets.LoadTexture("shooterDie", "assets/textures/mushroom/mushroom_die.png") ||
         !assets.LoadTexture("bossIdle", "assets/textures/boss/Golem_idle.png") ||
         !assets.LoadTexture("bossWalk", "assets/textures/boss/Golem_walk.png") ||
         !assets.LoadTexture("bossHurt", "assets/textures/boss/Golem_hurt.png") ||
         !assets.LoadTexture("bossDie", "assets/textures/boss/Golem_die.png") ||
         !assets.LoadTexture("bossAttack", "assets/textures/boss/Golem_attack.png") ||
-        !assets.LoadTexture("bossProjectile", "assets/textures/boss/Golem_projectile.png") ||
-        !assets.LoadTexture("mushroomProjectile", "assets/textures/mushroom/mushroom_projectile.png") ||
+        !assets.LoadTexture("boss_projectile", "assets/textures/boss_projectile.png") ||
+        (!assets.LoadTexture("shooter_projectile", "assets/textures/mushroom/mushroom_projectile.png") && !assets.LoadTexture("shooter_projectile", "assets/textures/shooter_eneny_projectile.png")) ||
         !assets.LoadTexture("tombstone", "assets/textures/tombstone.png")) {
         throw std::runtime_error("Could not load required textures");
     }
@@ -142,22 +156,23 @@ void Game::registerCharacterSprites() {
 
 void Game::run() {
     sf::Clock clock;
-    input.update();
+    input.update(window);
     while (window.isOpen()) {
+        float wheelDelta = 0.0f;
         while (const std::optional event = window.pollEvent()) {
             if (event->is<sf::Event::Closed>()) window.close();
-            if (const auto* mouseButton = event->getIf<sf::Event::MouseButtonPressed>()) {
-                if (mouseButton->button == sf::Mouse::Button::Left) {
-                    handleMouseClick(window.mapPixelToCoords(mouseButton->position));
+            if (const auto* mouseWheel = event->getIf<sf::Event::MouseWheelScrolled>()) {
+                if (mouseWheel->wheel == sf::Mouse::Wheel::Vertical) {
+                    wheelDelta += mouseWheel->delta;
                 }
-            }
-            if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()) {
-                if (state == GameState::Controls) settings.handleKeyPressed(keyPressed->code, input);
             }
         }
 
-        input.update();
-        updateUiHover();
+        input.update(window);
+        if (wheelDelta != 0.0f) {
+            input.setMouseWheelDelta(wheelDelta);
+        }
+
         audio.update();
         const float dt = std::min(clock.restart().asSeconds(), 1.0f / 30.0f);
         update(dt);
@@ -179,14 +194,61 @@ void Game::restart() {
 }
 
 void Game::update(float dt) {
-    if (input.isActionPressed(Action::Pause) &&
+    if (state == GameState::Menu || state == GameState::Info || state == GameState::LevelSelect ||
+        state == GameState::DifficultySelect || state == GameState::Shop || state == GameState::CharacterSelect) {
+        updateMenu();
+        return;
+    }
+
+    // Update achievement display timer
+    if (achievementDisplayTimer > 0.0f) {
+        achievementDisplayTimer -= dt;
+    }
+
+    // Check for new achievements
+    const auto& currentAchievements = level.getAchievements();
+    for (size_t i = 0; i < currentAchievements.size(); ++i) {
+        if (currentAchievements[i] && previousAchievements[i] == 0) {
+            // New achievement unlocked!
+            const char* achievementNames[] = {"First Kill", "5 Kills", "No Damage Run", "Boss Defeated"};
+            currentAchievementText = achievementNames[i];
+            achievementDisplayTimer = 3.0f; // Show for 3 seconds
+            previousAchievements[i] = 1;
+
+            // Trigger fireworks effect
+            const auto& players = level.getPlayers();
+            if (!players.empty() && players[0]) {
+                level.getFairies().createFireworks(players[0]->position, 20);
+            }
+        }
+    }
+
+    const InputState& p1Input = input.getPlayer1Input();
+    if (p1Input.menuConfirm &&
+        (state == GameState::Victory || state == GameState::GameOver)) {
+        restart();
+    }
+    if (p1Input.menuBack &&
+        (state == GameState::Victory || state == GameState::GameOver)) {
+        state = GameState::Menu;
+    }
+    if (p1Input.menuBack && state == GameState::Playing) {
+        state = GameState::Paused;
+        pauseMenuIndex = 0;
+    }
+    if (p1Input.pause &&
         (state == GameState::Playing || state == GameState::Paused)) {
         state = state == GameState::Playing ? GameState::Paused : GameState::Playing;
+        if (state == GameState::Paused) pauseMenuIndex = 0;
     }
-    if (state == GameState::Menu || state == GameState::Info || state == GameState::LevelSelect ||
-        state == GameState::DifficultySelect || state == GameState::Shop || state == GameState::CharacterSelect ||
-        state == GameState::Controls || state == GameState::Paused || state == GameState::Victory ||
-        state == GameState::GameOver) return;
+    if (state == GameState::Paused) {
+        updatePaused();
+        return;
+    }
+    if (state == GameState::Controls) {
+        updateControls(dt);
+        return;
+    }
     if (state != GameState::Playing) return;
 
     InputState p1 = input.getPlayer1Input();
@@ -196,6 +258,9 @@ void Game::update(float dt) {
     while (remaining > 0.0f) {
         const float stepDt = std::min(physicsStep, remaining);
         level.update(stepDt, p1, p2);
+        if (state == GameState::Playing) {
+            level.checkAchievements();
+        }
         updateCamera(stepDt);
         p1.jump = p1.attack = p1.dodge = p1.useItem = false;
         p1.slotPrev = p1.slotNext = false;
@@ -216,132 +281,362 @@ void Game::update(float dt) {
     if (level.allDead()) state = GameState::GameOver;
 }
 
-void Game::updateUiHover() {
-    const sf::Vector2f mousePosition = window.mapPixelToCoords(sf::Mouse::getPosition(window));
-    if (state == GameState::Controls) {
-        settings.updateHover(mousePosition);
-        return;
-    }
-    menu.updateHover(state, mousePosition, static_cast<int>(Player::profiles().size()));
-}
+void Game::updateMenu() {
+    const InputState& p1Input = input.getPlayer1Input();
 
-void Game::handleMouseClick(sf::Vector2f mousePosition) {
-    if (state == GameState::Playing) return;
-    if (state == GameState::Controls) {
-        if (settings.handleMouseClick(mousePosition)) state = settingsReturnState;
-        return;
+    // Handle mouse wheel viewport scrolling
+    if (input.getMouseWheelDelta() != 0.0f) {
+        const int delta = input.getMouseWheelDelta() > 0 ? -1 : 1;
+        const int maxVisible = MenuScreen::getMaxVisibleItems(state);
+        const int totalItems = MenuScreen::getTotalItems(state, legendUnlocked, profileLevels);
+        int newOffset = MenuScreen::getViewportOffset() + delta;
+        newOffset = std::max(0, std::min(newOffset, totalItems - maxVisible));
+        MenuScreen::setViewportOffset(newOffset);
+        input.resetMouseWheelDelta();
     }
 
-    const int buttonIndex = menu.buttonAt(state, mousePosition, static_cast<int>(Player::profiles().size()));
-    if (buttonIndex >= 0) handleMenuClick(buttonIndex);
-}
-
-void Game::handleMenuClick(int buttonIndex) {
-    if (state == GameState::Menu) {
-        if (buttonIndex == 0 || buttonIndex == 1) {
-            playerCount = buttonIndex + 1;
-            activeSelectPlayer = 0;
-            state = GameState::LevelSelect;
-        } else if (buttonIndex == 2) {
-            state = GameState::DifficultySelect;
-        } else if (buttonIndex == 3) {
-            state = GameState::Shop;
-        } else if (buttonIndex == 4) {
-            state = GameState::Info;
-        } else if (buttonIndex == 5) {
-            openSettings(GameState::Menu);
-        } else if (buttonIndex == 6) {
-            window.close();
-        }
-        return;
+    const sf::Vector2i currentMouse = input.getMousePosition();
+    const int itemUnderMouse = MenuScreen::getMenuItemUnderMouse(state, currentMouse, menuIndex,
+                                                                 selectedLevel, unlockedLevelCount, selectedDifficulty,
+                                                                 walletCoins, shopIndex, legendUnlocked, profileLevels,
+                                                                 pauseMenuIndex, controlsPlayerIndex, controlsActionIndex);
+    if (itemUnderMouse >= 0 && itemUnderMouse < 7) {
+        menuIndex = itemUnderMouse;
     }
 
     if (state == GameState::Info) {
-        state = GameState::Menu;
+        if (p1Input.menuConfirm || p1Input.menuBack || input.mousePressed(sf::Mouse::Button::Left)) {
+            state = GameState::Menu;
+        }
         return;
     }
 
     if (state == GameState::LevelSelect) {
-        if (buttonIndex == static_cast<int>(LEVELS.size())) {
-            state = GameState::Menu;
-        } else if (buttonIndex < unlockedLevelCount) {
-            selectedLevel = buttonIndex;
-            activeSelectPlayer = 0;
-            state = GameState::CharacterSelect;
-        }
+        updateMapSelect();
         return;
     }
 
     if (state == GameState::DifficultySelect) {
-        if (buttonIndex == static_cast<int>(DIFFICULTIES.size())) {
-            state = GameState::Menu;
-        } else {
-            selectedDifficulty = buttonIndex;
-            state = GameState::Menu;
-        }
-        return;
-    }
-
-    if (state == GameState::CharacterSelect) {
-        const int profileCount = static_cast<int>(Player::profiles().size());
-        if (buttonIndex < profileCount) {
-            if (!profileUnlocked(buttonIndex)) return;
-            selectedProfiles[activeSelectPlayer] = buttonIndex;
-            if (playerCount == 2) activeSelectPlayer = 1 - activeSelectPlayer;
-        } else if (buttonIndex == profileCount) {
-            restart();
-        } else {
-            activeSelectPlayer = 0;
-            state = GameState::LevelSelect;
-        }
+        updateDifficultySelect();
         return;
     }
 
     if (state == GameState::Shop) {
-        handleShopClick(buttonIndex);
+        updateShop();
         return;
     }
 
-    if (state == GameState::Paused) {
-        if (buttonIndex == 0) state = GameState::Playing;
-        if (buttonIndex == 1) openSettings(GameState::Paused);
-        if (buttonIndex == 2) state = GameState::Menu;
+    if (state == GameState::CharacterSelect) {
+        updateCharacterSelect();
         return;
     }
 
-    if (state == GameState::Victory || state == GameState::GameOver) {
-        if (buttonIndex == 0) restart();
-        if (buttonIndex == 1) state = GameState::Menu;
+    if (p1Input.info) {
+        state = GameState::Info;
+        return;
+    }
+
+    if (input.mousePressed(sf::Mouse::Button::Left) && itemUnderMouse >= 0) {
+        menuIndex = itemUnderMouse;
+        if (menuIndex == 0 || menuIndex == 1) {
+            playerCount = menuIndex + 1;
+            activeSelectPlayer = 0;
+            state = GameState::LevelSelect;
+            MenuScreen::setViewportOffset(0);
+        } else if (menuIndex == 2) {
+            state = GameState::DifficultySelect;
+            MenuScreen::setViewportOffset(0);
+        } else if (menuIndex == 3) {
+            state = GameState::Shop;
+            MenuScreen::setViewportOffset(0);
+        } else if (menuIndex == 4) {
+            state = GameState::Info;
+            MenuScreen::setViewportOffset(0);
+        } else if (menuIndex == 5) {
+            resetGame();
+        } else if (menuIndex == 6) {
+            window.close();
+        }
     }
 }
 
-void Game::handleShopClick(int buttonIndex) {
-    const int count = static_cast<int>(Player::profiles().size());
-    shopIndex = buttonIndex;
-    if (buttonIndex == count) {
-        state = GameState::Menu;
+void Game::updatePaused() {
+    constexpr int pauseItemCount = 3;
+
+    // Handle mouse wheel viewport scrolling
+    if (input.getMouseWheelDelta() != 0.0f) {
+        const int delta = input.getMouseWheelDelta() > 0 ? -1 : 1;
+        const int maxVisible = MenuScreen::getMaxVisibleItems(state);
+        const int totalItems = MenuScreen::getTotalItems(state, legendUnlocked, profileLevels);
+        int newOffset = MenuScreen::getViewportOffset() + delta;
+        newOffset = std::max(0, std::min(newOffset, totalItems - maxVisible));
+        MenuScreen::setViewportOffset(newOffset);
+        input.resetMouseWheelDelta();
+    }
+
+    const sf::Vector2i currentMouse = input.getMousePosition();
+    const int itemUnderMouse = MenuScreen::getMenuItemUnderMouse(state, currentMouse, menuIndex,
+                                                                 selectedLevel, unlockedLevelCount, selectedDifficulty,
+                                                                 walletCoins, shopIndex, legendUnlocked, profileLevels,
+                                                                 pauseMenuIndex, controlsPlayerIndex, controlsActionIndex);
+    if (itemUnderMouse >= 0 && itemUnderMouse < pauseItemCount) {
+        pauseMenuIndex = itemUnderMouse;
+    }
+
+    if (input.getPlayer1Input().menuBack) {
+        state = GameState::Playing;
         return;
     }
-    if (buttonIndex < 0 || buttonIndex >= count) return;
 
-    const int legendIndex = count - 1;
-    if (buttonIndex == legendIndex && !legendUnlocked) {
-        if (walletCoins >= LEGEND_PRICE) {
-            walletCoins -= LEGEND_PRICE;
-            legendUnlocked = true;
+    if (input.mousePressed(sf::Mouse::Button::Left) && itemUnderMouse >= 0 && itemUnderMouse < pauseItemCount) {
+        pauseMenuIndex = itemUnderMouse;
+        if (pauseMenuIndex == 0) state = GameState::Playing;
+        else if (pauseMenuIndex == 1) {
+            state = GameState::Controls;
+            controlsPlayerIndex = 0;
+            controlsActionIndex = 0;
+            rebinding = false;
+            rebindWarning.clear();
+            MenuScreen::setViewportOffset(0);
+        } else if (pauseMenuIndex == 2) {
+            state = GameState::Menu;
+            MenuScreen::setViewportOffset(0);
+        }
+    }
+}
+
+void Game::updateControls(float dt) {
+    if (rebindWarningTimer > 0.0f) {
+        rebindWarningTimer -= dt;
+        if (rebindWarningTimer <= 0.0f) rebindWarning.clear();
+    }
+
+    // Handle mouse wheel viewport scrolling
+    if (input.getMouseWheelDelta() != 0.0f) {
+        const int delta = input.getMouseWheelDelta() > 0 ? -1 : 1;
+        const int maxVisible = MenuScreen::getMaxVisibleItems(state);
+        const int totalItems = MenuScreen::getTotalItems(state, legendUnlocked, profileLevels);
+        int newOffset = MenuScreen::getViewportOffset() + delta;
+        newOffset = std::max(0, std::min(newOffset, totalItems - maxVisible));
+        MenuScreen::setViewportOffset(newOffset);
+        input.resetMouseWheelDelta();
+    }
+
+    const sf::Vector2i currentMouse = input.getMousePosition();
+    const int itemUnderMouse = MenuScreen::getMenuItemUnderMouse(state, currentMouse, menuIndex,
+                                                                 selectedLevel, unlockedLevelCount, selectedDifficulty,
+                                                                 walletCoins, shopIndex, legendUnlocked, profileLevels,
+                                                                 pauseMenuIndex, controlsPlayerIndex, controlsActionIndex);
+    if (itemUnderMouse >= 0 && itemUnderMouse < InputManager::ActionCount) {
+        controlsActionIndex = itemUnderMouse;
+    }
+
+    if (rebinding) {
+        if (input.getPlayer1Input().menuBack) {
+            rebinding = false;
+            rebindWarning.clear();
+            return;
+        }
+        const sf::Keyboard::Key newKey = input.pollNewKey();
+        if (newKey != sf::Keyboard::Key::Unknown) {
+            if (input.isKeyAssigned(newKey)) {
+                rebindWarning = "Key " + InputManager::getKeyName(newKey) + " already in use!";
+                rebindWarningTimer = 2.0f;
+            } else {
+                input.rebindKey(controlsPlayerIndex, controlsActionIndex, newKey);
+                rebinding = false;
+                rebindWarning.clear();
+            }
         }
         return;
     }
-    if (!profileUnlocked(buttonIndex)) return;
-    if (profileLevels[static_cast<std::size_t>(buttonIndex)] >= 2) return;
-    if (walletCoins < UPGRADE_PRICE) return;
-    walletCoins -= UPGRADE_PRICE;
-    ++profileLevels[static_cast<std::size_t>(buttonIndex)];
+
+    if (input.getPlayer1Input().menuBack) {
+        state = GameState::Paused;
+        MenuScreen::setViewportOffset(0);
+        return;
+    }
+
+    if (input.mousePressed(sf::Mouse::Button::Left)) {
+        if (itemUnderMouse == -10) {
+            controlsPlayerIndex = 0;
+            return;
+        }
+        if (itemUnderMouse == -11) {
+            controlsPlayerIndex = 1;
+            return;
+        }
+        if (itemUnderMouse >= 0 && itemUnderMouse < InputManager::ActionCount) {
+            controlsActionIndex = itemUnderMouse;
+            rebinding = true;
+            rebindWarning.clear();
+        }
+    }
 }
 
-void Game::openSettings(GameState returnState) {
-    settingsReturnState = returnState;
-    state = GameState::Controls;
+void Game::updateMapSelect() {
+    if (input.getMouseWheelDelta() != 0.0f) {
+        const int delta = input.getMouseWheelDelta() > 0 ? -1 : 1;
+        const int maxVisible = MenuScreen::getMaxVisibleItems(state);
+        const int totalItems = MenuScreen::getTotalItems(state, legendUnlocked, profileLevels);
+        int newOffset = MenuScreen::getViewportOffset() + delta;
+        newOffset = std::max(0, std::min(newOffset, totalItems - maxVisible));
+        MenuScreen::setViewportOffset(newOffset);
+        input.resetMouseWheelDelta();
+    }
+
+    const sf::Vector2i currentMouse = input.getMousePosition();
+    const int itemUnderMouse = MenuScreen::getMenuItemUnderMouse(state, currentMouse, menuIndex,
+                                                                 selectedLevel, unlockedLevelCount, selectedDifficulty,
+                                                                 walletCoins, shopIndex, legendUnlocked, profileLevels,
+                                                                 pauseMenuIndex, controlsPlayerIndex, controlsActionIndex);
+    if (itemUnderMouse >= 0 && itemUnderMouse < static_cast<int>(LEVELS.size())) {
+        selectedLevel = itemUnderMouse;
+    }
+
+    if (input.getPlayer1Input().menuBack) {
+        state = GameState::Menu;
+        MenuScreen::setViewportOffset(0);
+        return;
+    }
+
+    if (input.mousePressed(sf::Mouse::Button::Left) && itemUnderMouse >= 0) {
+        if (itemUnderMouse < unlockedLevelCount) {
+            selectedLevel = itemUnderMouse;
+            activeSelectPlayer = 0;
+            state = GameState::CharacterSelect;
+            MenuScreen::setViewportOffset(0);
+        }
+    }
+}
+
+void Game::updateDifficultySelect() {
+    if (input.getMouseWheelDelta() != 0.0f) {
+        const int delta = input.getMouseWheelDelta() > 0 ? -1 : 1;
+        const int maxVisible = MenuScreen::getMaxVisibleItems(state);
+        const int totalItems = MenuScreen::getTotalItems(state, legendUnlocked, profileLevels);
+        int newOffset = MenuScreen::getViewportOffset() + delta;
+        newOffset = std::max(0, std::min(newOffset, totalItems - maxVisible));
+        MenuScreen::setViewportOffset(newOffset);
+        input.resetMouseWheelDelta();
+    }
+
+    const sf::Vector2i currentMouse = input.getMousePosition();
+    const int itemUnderMouse = MenuScreen::getMenuItemUnderMouse(state, currentMouse, menuIndex,
+                                                                 selectedLevel, unlockedLevelCount, selectedDifficulty,
+                                                                 walletCoins, shopIndex, legendUnlocked, profileLevels,
+                                                                 pauseMenuIndex, controlsPlayerIndex, controlsActionIndex);
+    if (itemUnderMouse >= 0 && itemUnderMouse < 3) {
+        selectedDifficulty = itemUnderMouse;
+    }
+
+    if (input.getPlayer1Input().menuBack) {
+        state = GameState::Menu;
+        MenuScreen::setViewportOffset(0);
+        return;
+    }
+
+    if (input.mousePressed(sf::Mouse::Button::Left) && itemUnderMouse >= 0 && itemUnderMouse < 3) {
+        selectedDifficulty = itemUnderMouse;
+        state = GameState::Menu;
+        MenuScreen::setViewportOffset(0);
+    }
+}
+
+void Game::updateCharacterSelect() {
+    if (input.getMouseWheelDelta() != 0.0f) {
+        const int delta = input.getMouseWheelDelta() > 0 ? -1 : 1;
+        const int maxVisible = MenuScreen::getMaxVisibleItems(state);
+        const int totalItems = MenuScreen::getTotalItems(state, legendUnlocked, profileLevels);
+        int newOffset = MenuScreen::getViewportOffset() + delta;
+        newOffset = std::max(0, std::min(newOffset, totalItems - maxVisible));
+        MenuScreen::setViewportOffset(newOffset);
+        input.resetMouseWheelDelta();
+    }
+
+    const sf::Vector2i currentMouse = input.getMousePosition();
+    const int itemUnderMouse = MenuScreen::getMenuItemUnderMouse(state, currentMouse, menuIndex,
+                                                                 selectedLevel, unlockedLevelCount, selectedDifficulty,
+                                                                 walletCoins, shopIndex, legendUnlocked, profileLevels,
+                                                                 pauseMenuIndex, controlsPlayerIndex, controlsActionIndex);
+    if (itemUnderMouse >= 0 && itemUnderMouse < static_cast<int>(Player::profiles().size())) {
+        if (profileUnlocked(itemUnderMouse)) {
+            selectedProfiles[activeSelectPlayer] = itemUnderMouse;
+        }
+    }
+
+    if (input.getPlayer1Input().menuBack) {
+        if (playerCount == 2 && activeSelectPlayer == 1) {
+            activeSelectPlayer = 0; // Go back to Player 1 pick
+        } else {
+            state = GameState::LevelSelect;
+            MenuScreen::setViewportOffset(0);
+        }
+        return;
+    }
+
+    if (input.mousePressed(sf::Mouse::Button::Left) && itemUnderMouse >= 0 && itemUnderMouse < static_cast<int>(Player::profiles().size())) {
+        if (profileUnlocked(itemUnderMouse)) {
+            selectedProfiles[activeSelectPlayer] = itemUnderMouse;
+            if (playerCount == 2 && activeSelectPlayer == 0) {
+                activeSelectPlayer = 1; // 1st click picked P1 character -> switch to P2
+            } else {
+                restart(); // 2nd click (or 1-player click) starts game!
+            }
+        }
+    }
+}
+
+void Game::updateShop() {
+    const int count = static_cast<int>(Player::profiles().size());
+    const int rows = count + 1;
+
+    // Handle mouse wheel viewport scrolling
+    if (input.getMouseWheelDelta() != 0.0f) {
+        const int delta = input.getMouseWheelDelta() > 0 ? -1 : 1;
+        const int maxVisible = MenuScreen::getMaxVisibleItems(state);
+        const int totalItems = MenuScreen::getTotalItems(state, legendUnlocked, profileLevels);
+        int newOffset = MenuScreen::getViewportOffset() + delta;
+        newOffset = std::max(0, std::min(newOffset, totalItems - maxVisible));
+        MenuScreen::setViewportOffset(newOffset);
+        input.resetMouseWheelDelta();
+    }
+
+    const sf::Vector2i currentMouse = input.getMousePosition();
+    const int itemUnderMouse = MenuScreen::getMenuItemUnderMouse(state, currentMouse, menuIndex,
+                                                                 selectedLevel, unlockedLevelCount, selectedDifficulty,
+                                                                 walletCoins, shopIndex, legendUnlocked, profileLevels,
+                                                                 pauseMenuIndex, controlsPlayerIndex, controlsActionIndex);
+    if (itemUnderMouse >= 0 && itemUnderMouse < rows) {
+        shopIndex = itemUnderMouse;
+    }
+
+    if (input.getPlayer1Input().menuBack) {
+        state = GameState::Menu;
+        MenuScreen::setViewportOffset(0);
+        return;
+    }
+
+    if (input.mousePressed(sf::Mouse::Button::Left) && itemUnderMouse >= 0) {
+        if (itemUnderMouse == count) {
+            state = GameState::Menu;
+            MenuScreen::setViewportOffset(0);
+            return;
+        }
+        const int legendIndex = count - 1;
+        if (itemUnderMouse == legendIndex && !legendUnlocked) {
+            if (walletCoins >= LEGEND_PRICE) {
+                walletCoins -= LEGEND_PRICE;
+                legendUnlocked = true;
+            }
+            return;
+        }
+        if (!profileUnlocked(itemUnderMouse)) return;
+        if (profileLevels[static_cast<std::size_t>(itemUnderMouse)] >= 2) return;
+        if (walletCoins < UPGRADE_PRICE) return;
+        walletCoins -= UPGRADE_PRICE;
+        ++profileLevels[static_cast<std::size_t>(itemUnderMouse)];
+    }
 }
 
 Player::Profile Game::upgradedProfile(int profileIndex) const {
@@ -355,6 +650,18 @@ Player::Profile Game::upgradedProfile(int profileIndex) const {
 bool Game::profileUnlocked(int profileIndex) const {
     const int legendIndex = static_cast<int>(Player::profiles().size()) - 1;
     return profileIndex != legendIndex || legendUnlocked;
+}
+
+void Game::moveProfileSelection(int player, int delta) {
+    const int count = static_cast<int>(Player::profiles().size());
+    int next = selectedProfiles[player];
+    for (int attempts = 0; attempts < count; ++attempts) {
+        next = (next + delta + count) % count;
+        if (profileUnlocked(next)) {
+            selectedProfiles[player] = next;
+            return;
+        }
+    }
 }
 
 void Game::updateCamera(float dt) {
@@ -384,18 +691,85 @@ void Game::updateCamera(float dt) {
 void Game::render() {
     window.clear({16, 19, 24});
 
-    sf::Sprite background(assets.texture("background"));
-    background.setPosition({0.0f, 0.0f});
-    window.draw(background);
-
     const bool showLevel = state == GameState::Playing || state == GameState::Paused ||
-                           state == GameState::Victory || state == GameState::GameOver;
+                           state == GameState::Controls || state == GameState::Victory || state == GameState::GameOver;
     if (showLevel) {
         level.draw(window, camera);
         hud.draw(window, level);
+    } else {
+        sf::Sprite background(assets.texture("background"));
+        background.setPosition({0.0f, 0.0f});
+        window.draw(background);
+    }
+
+    // Draw achievement notification
+    if (achievementDisplayTimer > 0.0f) {
+        HUD::drawAchievement(window, currentAchievementText, {20.0f, static_cast<float>(Constants::WINDOW_HEIGHT) - 80.0f}, achievementDisplayTimer);
     }
     menu.draw(window, state, menuIndex, selectedProfiles, activeSelectPlayer, playerCount, audio.getMasterVolume(), gameSpeed,
-              selectedLevel, unlockedLevelCount, selectedDifficulty, walletCoins, shopIndex, legendUnlocked, profileLevels);
-    if (state == GameState::Controls) settings.draw(window, input);
+              selectedLevel, unlockedLevelCount, selectedDifficulty, walletCoins, shopIndex, legendUnlocked, profileLevels,
+              pauseMenuIndex, controlsPlayerIndex, controlsActionIndex, rebinding, rebindWarning, input);
     window.display();
+}
+
+void Game::saveGame() {
+    try {
+        saveData.walletCoins = walletCoins;
+        saveData.unlockedLevelCount = unlockedLevelCount;
+        saveData.legendUnlocked = legendUnlocked;
+        saveData.profileLevels = profileLevels;
+
+        // Convert bool achievements to char for serialization
+        const auto& boolAchievements = level.getAchievements();
+        saveData.achievements.resize(boolAchievements.size());
+        for (size_t i = 0; i < boolAchievements.size(); ++i) {
+            saveData.achievements[i] = boolAchievements[i] ? 1 : 0;
+        }
+
+        saveData.saveToFile();
+    } catch (const std::exception& e) {
+        // Silently fail if saving doesn't work
+    }
+}
+
+void Game::loadGame() {
+    try {
+        if (saveData.loadFromFile()) {
+            walletCoins = saveData.walletCoins;
+            unlockedLevelCount = saveData.unlockedLevelCount;
+            legendUnlocked = saveData.legendUnlocked;
+            profileLevels = saveData.profileLevels;
+
+            // Convert char achievements back to bool
+            std::vector<bool> boolAchievements;
+            if (saveData.achievements.size() > 0) {
+                boolAchievements.resize(saveData.achievements.size());
+                for (size_t i = 0; i < saveData.achievements.size(); ++i) {
+                    boolAchievements[i] = saveData.achievements[i] != 0;
+                }
+            }
+            level.setAchievements(boolAchievements);
+        } else {
+            // First time playing - unlock all levels for testing
+            unlockedLevelCount = 4; // Unlock all 4 levels
+        }
+    } catch (const std::exception& e) {
+        // If loading fails, reset to defaults
+        walletCoins = 0;
+        unlockedLevelCount = 4;
+        legendUnlocked = false;
+        profileLevels.assign(Player::profiles().size(), 0);
+        std::vector<bool> emptyAchievements(4, false);
+        level.setAchievements(emptyAchievements);
+    }
+}
+
+void Game::resetGame() {
+    saveData.reset();
+    saveData.saveToFile();
+    walletCoins = 0;
+    unlockedLevelCount = 1;
+    legendUnlocked = false;
+    profileLevels.assign(Player::profiles().size(), 0);
+    level.resetAchievements();
 }

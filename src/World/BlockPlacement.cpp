@@ -67,7 +67,6 @@ bool BlockPlacement::tryPlaceBlock(
         if (overlapsAnyObject(blockRect, players, enemies, items, tombstones)) continue;
 
         if (!map.setSolid(tx, ty)) continue;
-        player.recordPlacedBlock(tx, ty);
         player.getInventory().removeFromSlot(BLOCK_SLOT_INDEX);
         return true;
     }
